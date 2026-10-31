@@ -1,524 +1,1134 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Starwarts - 魔法装备游戏</title>
+    <title>Starwarts Magic Academy</title>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&display=swap');
-        body{font-family:'Cinzel',serif;background:linear-gradient(135deg,#0c0c2e 0%,#1a1a4e 50%,#2d1b69 100%);min-height:100vh;overflow-x:hidden}.starfield{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:-1}.star{position:absolute;background:white;border-radius:50%;animation:twinkle 2s infinite}@keyframes twinkle{0%,100%{opacity:.3}50%{opacity:1}}.magic-border{background:linear-gradient(45deg,#4f46e5,#7c3aed,#ec4899,#4f46e5);background-size:400% 400%;animation:gradientShift 3s ease infinite;border-radius:12px;padding:2px}@keyframes gradientShift{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}.magic-card{background:rgba(30,30,80,.9);backdrop-filter:blur(10px);border:1px solid rgba(147,51,234,.3)}.character-avatar{width:200px;height:250px;background-size:cover;background-position:center;border-radius:10px;transition:all .3s ease;display:flex;align-items:center;justify-content:center;margin:0 auto;border:3px solid rgba(147,51,234,.5)}.character-avatar-default-bg{background:linear-gradient(135deg,#5b21b6 0%,#1e3a8a 100%)}.inventory-slot{width:70px;height:80px;border:2px dashed rgba(147,51,234,.5);border-radius:8px;display:flex;align-items:center;justify-content:center;transition:all .3s ease;position:relative}.inventory-slot.filled{border-style:solid;background:rgba(147,51,234,.2);padding:2px}.text-xxs{font-size:.65rem;line-height:.85rem}.modal-overlay{background:rgba(0,0,0,.8);backdrop-filter:blur(5px)}.floating{animation:floating 3s ease-in-out infinite}@keyframes floating{0%,100%{transform:translateY(0px)}50%{transform:translateY(-10px)}}.nav-button{transition:all .3s ease}.nav-button.active{background-color:#ec4899;box-shadow:0 0 15px #ec4899}.arena-card{border:2px solid rgba(147,51,234,.5);background:rgba(20,20,60,.8)}.confetti-container{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;overflow:hidden}.confetti{position:absolute;width:10px;height:10px;background-color:#f00;opacity:0;animation:fall 3s ease-in-out forwards}@keyframes fall{0%{transform:translateY(-100px) rotateZ(0deg);opacity:1}100%{transform:translateY(100vh) rotateZ(720deg);opacity:0}}input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}input[type=number]{-moz-appearance:textfield}
+        :root { --bg:#0b1020; --panel:#141a2e; --panel2:#1b2238; --line:rgba(185,28,28,.35); --crimson:#c0392b; --gold:#e6b450; --muted:#94a3b8; }
+        body { background: radial-gradient(ellipse at top, #1a2140 0%, #0b1020 60%); min-height:100vh; color:#e5e7eb; font-family:"Segoe UI","Helvetica Neue",Arial,"PingFang SC","Microsoft YaHei",sans-serif; }
+        .font-magic { font-family:Georgia,"Times New Roman","Songti SC","STSong",serif; letter-spacing:.04em; }
+        .panel { background:linear-gradient(160deg, rgba(27,34,56,.95), rgba(17,22,38,.95)); border:1px solid var(--line); border-radius:14px; box-shadow:0 8px 30px rgba(0,0,0,.35); }
+        .panel-title { font-family:Georgia,"Times New Roman","Songti SC",serif; color:var(--crimson); letter-spacing:.12em; font-weight:700; }
+        .gold { color:var(--gold); }
+        .tile { background:rgba(15,20,36,.8); border:1px solid rgba(148,163,184,.18); border-radius:10px; }
+        .btn-crimson { background:linear-gradient(135deg,#b91c1c,#7f1d1d); color:#fff; border:1px solid rgba(230,180,80,.35); }
+        .btn-crimson:hover { filter:brightness(1.15); }
+        .btn-gold { background:linear-gradient(135deg,#e6b450,#b7791f); color:#1a1205; font-weight:700; }
+        .btn-gold:hover { filter:brightness(1.1); }
+        .btn-ghost { background:rgba(148,163,184,.12); color:#e5e7eb; border:1px solid rgba(148,163,184,.25); }
+        .btn-ghost:hover { background:rgba(148,163,184,.22); }
+        button:disabled { opacity:.45; cursor:not-allowed; filter:grayscale(.4); }
+        .chip { border:1px solid rgba(148,163,184,.3); border-radius:999px; padding:.15rem .6rem; font-size:.75rem; }
+        .choice { background:rgba(15,20,36,.8); border:1px solid rgba(148,163,184,.25); border-radius:10px; transition:.15s; cursor:pointer; }
+        .choice:hover { border-color:rgba(230,180,80,.6); }
+        .choice.correct:disabled, .choice.wrong:disabled { opacity:1; filter:none; }
+        .choice.correct { border-color:#22c55e !important; background:rgba(34,197,94,.15) !important; }
+        .choice.wrong { border-color:#ef4444 !important; background:rgba(239,68,68,.15) !important; }
+        .choice.selected { border-color:var(--gold); box-shadow:0 0 0 2px rgba(230,180,80,.35) inset; background:rgba(230,180,80,.08); }
+        /* 侧边栏 */
+        #sidebar { background:linear-gradient(180deg,#121830,#0d1224); border-right:1px solid var(--line); }
+        .nav-btn { display:flex; align-items:center; gap:.7rem; width:100%; padding:.55rem .8rem; border-radius:8px; color:#cbd5e1; font-family:Georgia,"Times New Roman","Songti SC",serif; letter-spacing:.06em; border:1px solid transparent; white-space:nowrap; }
+        .nav-btn i { width:1.1rem; text-align:center; color:#94a3b8; }
+        .nav-btn:hover { background:rgba(148,163,184,.1); }
+        .nav-btn.active { color:#fca5a5; background:rgba(185,28,28,.15); border-color:rgba(185,28,28,.5); }
+        .nav-btn.active i { color:#f87171; }
+        #mobileTop { display:none; }
+        @media (min-width:768px) { #sidebar { position:sticky; top:0; height:100vh; width:15rem; flex-shrink:0; overflow-y:auto; } }
+        @media (max-width:767px) {
+            #sidebar { position:sticky; top:0; z-index:40; width:100%; }
+            #navList { display:flex; overflow-x:auto; gap:.25rem; padding-bottom:.25rem; }
+            #navList .nav-btn { width:auto; padding:.45rem .7rem; font-size:.85rem; }
+            #sideBrand, #sideUser { display:none; }
+            #mobileTop { display:flex; }
+        }
+        /* 头像 */
+        .avatar { width:150px; height:190px; border-radius:999px 999px 18px 18px; border:3px solid rgba(255,255,255,.85); background-size:cover; background-position:center; display:flex; align-items:center; justify-content:center; box-shadow:0 0 25px rgba(185,28,28,.35); }
+        .avatar-default { background:linear-gradient(160deg,#3b0d0d,#1e293b); }
+        .avatar-sm { width:110px; height:140px; }
+        .modal-overlay { background:rgba(0,0,0,.78); backdrop-filter:blur(4px); }
+        .text-xxs { font-size:.65rem; line-height:.85rem; }
+        .inventory-slot { width:72px; height:84px; border:2px dashed rgba(148,163,184,.25); border-radius:10px; display:flex; align-items:center; justify-content:center; }
+        .inventory-slot.filled { border-style:solid; border-color:rgba(230,180,80,.35); background:rgba(230,180,80,.06); padding:2px; }
+        .progress { height:6px; background:rgba(148,163,184,.2); border-radius:999px; overflow:hidden; }
+        .progress > div { height:100%; background:linear-gradient(90deg,#b91c1c,#e6b450); }
+        .starfield { position:fixed; inset:0; pointer-events:none; z-index:-1; }
+        .star { position:absolute; background:#fff; border-radius:50%; animation:twinkle 2.5s infinite; }
+        @keyframes twinkle { 0%,100% { opacity:.25 } 50% { opacity:.9 } }
+        .floating { animation:floating 3s ease-in-out infinite; }
+        @keyframes floating { 0%,100% { transform:translateY(0) } 50% { transform:translateY(-8px) } }
+        .bubble { animation:bubble 1s ease-in-out infinite; display:inline-block; }
+        @keyframes bubble { 0%,100% { transform:translateY(0) scale(1) } 50% { transform:translateY(-6px) scale(1.08) } }
+        .confetti-container { position:absolute; inset:0; pointer-events:none; overflow:hidden; }
+        .confetti { position:absolute; width:10px; height:10px; opacity:0; animation:fall 3s ease-in-out forwards; }
+        @keyframes fall { 0% { transform:translateY(-100px) rotateZ(0); opacity:1 } 100% { transform:translateY(100vh) rotateZ(720deg); opacity:0 } }
+        #toast { transition:.25s; }
+        input[type=number]::-webkit-inner-spin-button { -webkit-appearance:none; }
+        .field { width:100%; padding:.55rem .8rem; background:#0f1424; color:#fff; border:1px solid rgba(148,163,184,.35); border-radius:8px; }
+        .field:focus { outline:none; border-color:var(--gold); }
+        .house-gryffindor { --hc:#ae0001; --hc2:#d3a625; } .house-slytherin { --hc:#1a472a; --hc2:#aaaaaa; }
+        .house-ravenclaw { --hc:#222f5b; --hc2:#946b2d; } .house-hufflepuff { --hc:#ecb939; --hc2:#372e29; }
+        .house-badge { background:linear-gradient(135deg,var(--hc),rgba(0,0,0,.4)); border:1px solid var(--hc2); }
     </style>
 </head>
 <body>
-    <div class="starfield" id="starfield"></div>
-    <div id="loginRegisterModal" class="fixed inset-0 z-50 modal-overlay flex items-center justify-center">
-        <div class="magic-border"><div id="loginBox" class="magic-card p-8 rounded-lg text-center w-96"><h1 id="modalTitle" class="text-4xl font-bold text-purple-300 mb-4 floating">✨ Starwarts ⚡</h1><p id="modalSubtitle" class="text-gray-300 mb-6">登录或注册账号</p><div id="loginError" class="text-red-400 mb-2 hidden"></div><input type="text" id="usernameInput" autocomplete="username" class="w-full px-4 py-3 bg-gray-800 text-white rounded-lg border border-purple-500 mb-4" placeholder="输入账号..."><input type="text" id="regCharNameInput" maxlength="20" class="w-full px-4 py-3 bg-gray-800 text-white rounded-lg border border-purple-500 mb-4 hidden" placeholder="角色名（可选，之后也能改）..."><input type="password" id="passwordInput" class="w-full px-4 py-3 bg-gray-800 text-white rounded-lg border border-purple-500 mb-4" placeholder="输入密码..."><input type="password" id="confirmPasswordInput" class="w-full px-4 py-3 bg-gray-800 text-white rounded-lg border border-purple-500 mb-4 hidden" placeholder="确认密码..."><div id="initialButtons" class="flex space-x-4"><button onclick="login()" class="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white py-3 rounded-lg">登录</button><button id="registerButton" onclick="showRegisterForm()" class="w-full bg-gradient-to-r from-green-500 to-blue-500 text-white py-3 rounded-lg">注册</button></div><div id="registerButtons" class="flex space-x-4 hidden"><button onclick="register()" class="w-full bg-gradient-to-r from-green-500 to-blue-500 text-white py-3 rounded-lg">确认注册</button><button onclick="hideRegisterForm()" class="w-full bg-gray-600 text-white py-3 rounded-lg">返回登录</button></div></div></div>
+<div class="starfield" id="starfield"></div>
+
+
+<div id="loginRegisterModal" class="fixed inset-0 z-50 modal-overlay flex items-center justify-center p-4">
+    <div class="panel p-8 w-full text-center" style="max-width:24rem">
+        <h1 id="modalTitle" class="text-4xl font-bold gold font-magic mb-2 floating">Starwarts</h1>
+        <p class="text-xs tracking-widest text-gray-400 mb-1">MAGIC ACADEMY</p>
+        <p id="modalSubtitle" class="text-gray-300 mb-6">Log in or create an account</p>
+        <div id="loginError" class="text-red-400 mb-2 hidden"></div>
+        <input type="text" id="usernameInput" autocomplete="username" class="field mb-3" placeholder="Username">
+        <input type="text" id="regCharNameInput" maxlength="20" class="field mb-3 hidden" placeholder="Character name (optional, can change later)">
+        <input type="password" id="passwordInput" class="field mb-3" placeholder="Password">
+        <input type="password" id="confirmPasswordInput" class="field mb-3 hidden" placeholder="Confirm password">
+        <div id="initialButtons" class="flex gap-3 mt-2"><button onclick="login()" class="flex-1 btn-crimson py-3 rounded-lg font-bold">Log In</button><button id="registerButton" onclick="showRegisterForm()" class="flex-1 btn-ghost py-3 rounded-lg">Sign Up</button></div>
+        <div id="registerButtons" class="flex gap-3 mt-2 hidden"><button onclick="register()" class="flex-1 btn-crimson py-3 rounded-lg font-bold">Create Account</button><button onclick="hideRegisterForm()" class="flex-1 btn-ghost py-3 rounded-lg">Back to Log In</button></div>
     </div>
-    <div id="mainContainer" class="hidden min-h-screen p-4"></div>
-    <div id="characterCustomizationModal" class="fixed inset-0 z-50 modal-overlay items-center justify-center hidden"><div class="magic-border"><div class="magic-card p-6 rounded-lg w-96"><h3 class="text-xl font-bold text-purple-300 mb-4">自定义你的角色</h3><div class="space-y-4"><div><label for="customNameInput" class="block text-sm font-medium text-gray-300 mb-1">角色名称</label><input type="text" id="customNameInput" placeholder="输入你的角色名" class="w-full px-3 py-2 bg-gray-800 text-white rounded border border-purple-500"></div><div><label for="customAvatarUrlInput" class="block text-sm font-medium text-gray-300 mb-1">头像URL</label><input type="url" id="customAvatarUrlInput" placeholder="输入图片网络地址" class="w-full px-3 py-2 bg-gray-800 text-white rounded border border-purple-500"></div><div><label for="customAvatarFileInput" class="block text-sm font-medium text-gray-300 mb-1">或上传本地图片</label><input type="file" id="customAvatarFileInput" accept="image/*" class="w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:font-semibold file:bg-purple-600 file:text-white hover:file:bg-purple-700"></div><div class="flex space-x-3 pt-2"><button onclick="saveCustomization()" class="flex-1 bg-green-600 hover:bg-green-700 text-white py-2 rounded">保存</button><button type="button" onclick="closeCustomizationModal()" class="flex-1 bg-gray-600 hover:bg-gray-700 text-white py-2 rounded">取消</button></div></div></div></div></div>
-    <div id="listItemModal" class="fixed inset-0 z-50 modal-overlay items-center justify-center hidden"><div class="magic-border"><div class="magic-card p-6 rounded-lg w-96"><h3 class="text-xl font-bold text-purple-300 mb-4">上架仓库物品</h3><form id="listItemForm" class="space-y-4"><div><label for="listItemSelect" class="block text-sm font-medium text-gray-300 mb-1">选择要出售的物品</label><select id="listItemSelect" class="w-full px-3 py-2 bg-gray-800 text-white rounded border border-purple-500" required></select><p class="text-xs text-gray-500 mt-1">只能出售自己仓库里的装备或卡牌。上架后物品会从仓库移出，下架时退回。</p></div><input type="number" id="itemPriceInput" min="1" max="100000" step="1" placeholder="售价（正整数）" class="w-full px-3 py-2 bg-gray-800 text-white rounded border border-purple-500" required><div class="flex space-x-3"><button type="submit" class="flex-1 bg-green-600 hover:bg-green-700 text-white py-2 rounded">上架</button><button type="button" onclick="closeListItemModal()" class="flex-1 bg-gray-600 hover:bg-gray-700 text-white py-2 rounded">取消</button></div></form></div></div></div>
-    
-    <!-- 新增：战斗结果模态框 -->
-    <div id="battleResultModal" class="fixed inset-0 z-50 modal-overlay items-center justify-center hidden"><div class="magic-border"><div class="magic-card p-8 rounded-lg w-auto text-center relative"><div class="confetti-container" id="confettiContainer"></div><h2 id="battleResultText" class="text-6xl font-bold mb-4">胜利!</h2><div id="battleResultWinnerAvatar" class="character-avatar my-4 mx-auto"></div><p class="text-2xl text-white">获胜者是 <span id="battleResultWinnerName" class="font-bold text-yellow-300"></span>!</p><p id="battleRewardText" class="text-green-400 mt-2 text-lg"></p><button onclick="closeBattleResultModal()" class="mt-6 bg-gray-600 hover:bg-gray-700 text-white py-2 px-6 rounded">关闭</button></div></div></div>
+</div>
 
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script>
-        // ===================== 配置：把下面两行换成你自己 Supabase 项目的值 =====================
-        // 在 Supabase 控制台 → Project Settings → API Keys（或 Data API）里能找到
-        const SUPABASE_URL = 'https://rxnaklyaiquqlmjymzkk.supabase.co';
-        const SUPABASE_KEY = 'sb_publishable_nb620Ckj_sCfdA_lE0yITg_3OSo6WQk';   // 只能填 publishable / anon 公开密钥，绝对不要填 secret / service_role
+<div id="app" class="hidden"><div class="md:flex min-h-screen">
+    <!-- 侧边栏 -->
+    <aside id="sidebar" class="p-3 md:p-4 flex flex-col">
+        <div id="sideBrand" class="text-center mb-5 mt-2">
+            <div class="text-2xl gold font-magic">Starwarts</div>
+            <div class="text-xs tracking-widest text-gray-400 mt-1 pt-1 border-t border-gray-700">MAGIC ACADEMY</div>
+        </div>
+        <div id="mobileTop" class="items-center justify-between mb-2 px-1">
+            <span class="gold font-magic text-lg">Starwarts</span>
+            <span class="text-sm"><span class="gold"><i class="fas fa-coins"></i> <span class="sideGold">0</span></span> <span class="ml-2 text-pink-300"><i class="fas fa-star"></i> <span class="sideHonor">0</span></span></span>
+        </div>
+        <nav id="navList" class="space-y-1 md:space-y-1">
+            <button class="nav-btn active" data-view="common"><i class="fas fa-fire"></i>Common Room</button>
+            <button class="nav-btn" data-view="trunk"><i class="fas fa-suitcase"></i>My Trunk</button>
+            <button class="nav-btn" data-view="alley"><i class="fas fa-store"></i>Diagon Alley</button>
+            <button class="nav-btn" data-view="ollivanders"><i class="fas fa-magic"></i>Ollivanders</button>
+            <button class="nav-btn" data-view="duel"><i class="fas fa-bolt"></i>Dueling Club</button>
+            <button class="nav-btn" data-view="potions"><i class="fas fa-flask"></i>Potions</button>
+            <button class="nav-btn" data-view="menagerie"><i class="fas fa-paw"></i>Menagerie</button>
+            <button class="nav-btn" data-view="riddles"><i class="fas fa-book-open"></i>Riddles</button>
+            <button class="nav-btn" data-view="exchange"><i class="fas fa-exchange-alt"></i>Exchange</button>
+            <button class="nav-btn" data-view="halls"><i class="fas fa-trophy"></i>Hall of Fame</button>
+        </nav>
+        <div id="sideUser" class="mt-auto pt-4 border-t border-gray-700 text-sm">
+            <p class="font-bold truncate" id="sideName"></p>
+            <p class="gold mt-1"><i class="fas fa-coins mr-1"></i><span class="sideGold">0</span> Gold</p>
+            <p class="text-pink-300"><i class="fas fa-star mr-1"></i><span class="sideHonor">0</span> Honour</p>
+            <button onclick="saveGame()" class="btn-ghost w-full mt-3 py-1.5 rounded text-xs"><i class="fas fa-sign-out-alt mr-1"></i>Log Out</button>
+        </div>
+    </aside>
 
-        const INVENTORY_SIZE = 30;
-        const MAX_NAME_LENGTH = 20;
-        const MAX_PRICE = 100000;
-        const TOKEN_KEY = 'starwartsToken';
+    <main class="flex-1 p-4 md:p-8 space-y-6 min-w-0" id="main">
 
-        const configReady = !SUPABASE_URL.includes('你的项目') && !SUPABASE_KEY.includes('你的');
-        const sb = (configReady && window.supabase) ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: false } }) : null;
-
-        let gameState = {};
-        let globalEquipmentStore = [];
-        let globalMagicCardStore = [];
-        let currentListings = [];
-
-        // ===================== 安全工具 =====================
-        function esc(value) {
-            return String(value ?? '').replace(/[&<>"'`]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;', '`': '&#96;' }[c]));
-        }
-        // 只允许 http/https 图片地址，或网页压缩生成的小图片（data:image）
-        function safeUrl(value) {
-            if (!value) return '';
-            const s = String(value);
-            if (/^data:image\/(png|jpeg|webp|gif);base64,[A-Za-z0-9+/=]+$/.test(s)) return s;
-            try { const url = new URL(s); if (url.protocol === 'http:' || url.protocol === 'https:') return url.href; } catch (e) { }
-            return '';
-        }
-        function num(value) { const n = Number(value); return Number.isFinite(n) ? n : 0; }
-        function imgTag(url, alt, cls) { const u = safeUrl(url); return u ? `<img src="${esc(u)}" alt="${esc(alt)}" class="${cls}">` : ''; }
-        function setAvatar(el, url, fallbackIconHtml) {
-            const u = safeUrl(url);
-            if (u) { el.innerHTML = ''; el.style.backgroundImage = `url("${u.replace(/["\\\n\r]/g, encodeURIComponent)}")`; el.classList.remove('character-avatar-default-bg'); }
-            else { el.style.backgroundImage = ''; el.innerHTML = fallbackIconHtml; el.classList.add('character-avatar-default-bg'); }
-        }
-        function sumStat(items, key) { return (items || []).reduce((s, item) => s + num(item && item[key]), 0); }
-        function isEquipmentItem(item) { return !!item && Object.prototype.hasOwnProperty.call(item, 'attack') && Object.prototype.hasOwnProperty.call(item, 'defense'); }
-
-        // ===================== 与 Supabase 通信 =====================
-        // 所有操作都调用数据库里的 sw_ 函数；金币和物品全部由服务器计算
-        async function rpc(fn, params = {}, needLogin = true) {
-            if (!sb) throw new Error('网站还没有配置好 Supabase 地址和密钥，请联系老师');
-            if (needLogin) params = { p_token: localStorage.getItem(TOKEN_KEY) || '', ...params };
-            const { data, error } = await sb.rpc(fn, params);
-            if (error) {
-                const err = new Error(error.message || '请求失败');
-                if (/登录已过期/.test(error.message || '')) err.sessionExpired = true;
-                throw err;
-            }
-            return data;
-        }
-        function handleError(prefix, error) {
-            console.error(prefix, error);
-            if (error.sessionExpired) { alert('登录已过期，请重新登录。'); logout(true); return; }
-            alert(`${prefix}: ${error.message}`);
-        }
-        // 执行一个会改变存档的操作，用服务器返回的新存档刷新界面
-        async function act(fn, params, errorPrefix) {
-            try {
-                const data = await rpc(fn, params);
-                if (data && data.gameState) gameState = data.gameState;
-                renderAll();
-                return data;
-            } catch (error) { handleError(errorPrefix, error); return null; }
-        }
-
-        // ===================== 启动 =====================
-        document.addEventListener('DOMContentLoaded', async function () {
-            createStarfield();
-            document.getElementById('loginRegisterModal').classList.remove('hidden');
-            document.getElementById('passwordInput').addEventListener('keypress', function (e) {
-                if (e.key !== 'Enter') return;
-                const isLoginVisible = !document.getElementById('initialButtons').classList.contains('hidden');
-                if (isLoginVisible) login(); else register();
-            });
-            if (!sb) { showMessage('loginError', configReady ? '无法加载 Supabase 组件，请检查网络后刷新。' : '网站还没有配置 Supabase 地址和密钥（见网页源代码开头的配置区）。'); return; }
-            try {
-                const settings = await rpc('sw_public_settings', {}, false);
-                if (settings && settings.registrationOpen === false) document.getElementById('registerButton').classList.add('hidden');
-            } catch (e) { console.warn('读取设置失败', e); }
-            // 已登录过就自动进入
-            if (localStorage.getItem(TOKEN_KEY)) {
-                try { gameState = await rpc('sw_get_state'); await enterGame(); }
-                catch (e) { localStorage.removeItem(TOKEN_KEY); }
-            }
-        });
-
-        function createStarfield() {
-            const starfield = document.getElementById('starfield');
-            if (!starfield) return;
-            starfield.innerHTML = '';
-            for (let i = 0; i < 100; i++) { const star = document.createElement('div'); star.className = 'star'; star.style.left = Math.random() * 100 + '%'; star.style.top = Math.random() * 100 + '%'; star.style.width = Math.random() * 3 + 1 + 'px'; star.style.height = star.style.width; star.style.animationDelay = Math.random() * 2 + 's'; starfield.appendChild(star); }
-        }
-        function showMessage(elementId, message, isError = true) {
-            const div = document.getElementById(elementId);
-            div.textContent = message;
-            div.className = isError ? 'text-red-400 mb-2' : 'text-green-400 mb-2';
-            div.classList.remove('hidden');
-        }
-
-        // ===================== 账号 =====================
-        function showRegisterForm() { document.getElementById('modalTitle').textContent = '创建新账号'; document.getElementById('modalSubtitle').textContent = '账号只能用英文字母、数字或下划线'; document.getElementById('regCharNameInput').classList.remove('hidden'); document.getElementById('confirmPasswordInput').classList.remove('hidden'); document.getElementById('initialButtons').classList.add('hidden'); document.getElementById('registerButtons').classList.remove('hidden'); document.getElementById('loginError').classList.add('hidden'); }
-        function hideRegisterForm() { document.getElementById('modalTitle').textContent = '✨ Starwarts ⚡'; document.getElementById('modalSubtitle').textContent = '登录或注册账号'; document.getElementById('regCharNameInput').classList.add('hidden'); document.getElementById('confirmPasswordInput').classList.add('hidden'); document.getElementById('initialButtons').classList.remove('hidden'); document.getElementById('registerButtons').classList.add('hidden'); document.getElementById('loginError').classList.add('hidden'); }
-        async function register() {
-            const username = document.getElementById('usernameInput').value.trim();
-            const characterName = document.getElementById('regCharNameInput').value.trim();
-            const password = document.getElementById('passwordInput').value;
-            const confirmPassword = document.getElementById('confirmPasswordInput').value;
-            if (!username || !password) return showMessage('loginError', '账号和密码不能为空！');
-            if (password !== confirmPassword) return showMessage('loginError', '两次输入的密码不一致！');
-            try {
-                await rpc('sw_register', { p_username: username, p_password: password, p_character_name: characterName || null }, false);
-                hideRegisterForm();
-                document.getElementById('passwordInput').value = '';
-                document.getElementById('confirmPasswordInput').value = '';
-                showMessage('loginError', '注册成功！请输入密码登录。', false);
-            } catch (error) { showMessage('loginError', error.message); }
-        }
-        async function login() {
-            const username = document.getElementById('usernameInput').value.trim();
-            const password = document.getElementById('passwordInput').value;
-            if (!username || !password) return showMessage('loginError', '账号和密码不能为空！');
-            try {
-                const result = await rpc('sw_login', { p_username: username, p_password: password }, false);
-                if (!result || !result.ok) return showMessage('loginError', (result && result.message) || '登录失败');
-                localStorage.setItem(TOKEN_KEY, result.token);
-                gameState = result.gameState;
-                await enterGame();
-            } catch (error) { showMessage('loginError', error.message || '网络错误，无法连接到服务器。'); }
-        }
-        async function enterGame() {
-            document.getElementById('loginRegisterModal').classList.add('hidden');
-            document.getElementById('mainContainer').classList.remove('hidden');
-            await Promise.all([loadEquipmentStore(), loadMagicCardStore()]);
-            buildMainInterface();
-            renderAll();
-        }
-        function logout(skipServer) {
-            const token = localStorage.getItem(TOKEN_KEY);
-            if (token && !skipServer) rpc('sw_logout').catch(() => { });
-            localStorage.removeItem(TOKEN_KEY);
-            gameState = {};
-            document.getElementById('mainContainer').innerHTML = '';
-            document.getElementById('mainContainer').classList.add('hidden');
-            document.getElementById('loginRegisterModal').classList.remove('hidden');
-            document.getElementById('passwordInput').value = '';
-            document.getElementById('loginError').classList.add('hidden');
-            hideRegisterForm();
-        }
-        async function refreshState() {
-            try { gameState = await rpc('sw_get_state'); renderAll(); }
-            catch (error) { handleError('刷新存档失败', error); }
-        }
-
-        // ===================== 商店数据 =====================
-        async function loadEquipmentStore() { try { globalEquipmentStore = await rpc('sw_list_products', { p_type: 'equipment' }, false) || []; } catch (e) { console.error('加载装备商店失败:', e); globalEquipmentStore = []; } }
-        async function loadMagicCardStore() { try { globalMagicCardStore = await rpc('sw_list_products', { p_type: 'card' }, false) || []; } catch (e) { console.error('加载卡牌商店失败:', e); globalMagicCardStore = []; } }
-
-        // ===================== 界面搭建 =====================
-        function buildMainInterface() {
-            const mainContainer = document.getElementById('mainContainer');
-            if (mainContainer.querySelector('#gameContainer')) return;
-            mainContainer.innerHTML = `
-                <div class="text-center mb-6"><h1 class="text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400 floating">✨ Starwarts Magic Academy ⚡</h1><p class="text-gray-300 mt-2">欢迎来到星辰魔法学院</p></div>
-                <div class="magic-border mb-6"><div class="magic-card p-4 rounded-lg"><h2 class="text-2xl font-bold text-yellow-300 text-center mb-3"><i class="fas fa-trophy mr-2"></i>战斗力排行榜</h2><div id="leaderboard" class="space-y-2 max-h-48 overflow-y-auto"></div></div></div>
-                <div class="magic-border mb-6"><div class="magic-card p-4 rounded-lg"><h2 class="text-2xl font-bold text-yellow-300 text-center mb-3"><i class="fas fa-gem mr-2"></i>星辰财富榜</h2><div id="wealthLeaderboard" class="space-y-2 max-h-48 overflow-y-auto"></div></div></div>
-                <div class="flex justify-center space-x-4 mb-6"><button id="navInfoButton" onclick="switchView('info')" class="nav-button active bg-pink-600 text-white font-bold py-2 px-6 rounded-full"><i class="fas fa-user-circle mr-2"></i>巫师信息</button><button id="navExchangeButton" onclick="switchView('exchange')" class="nav-button bg-gray-600 text-white font-bold py-2 px-6 rounded-full"><i class="fas fa-exchange-alt mr-2"></i>交易所</button><button id="navArenaButton" onclick="switchView('arena')" class="nav-button bg-gray-600 text-white font-bold py-2 px-6 rounded-full"><i class="fas fa-khanda mr-2"></i>角斗场</button></div>
-                <div id="gameContainer"></div>
-                <div id="arenaContainer" class="hidden">
-                    <div class="magic-border mb-6"><div class="magic-card p-8 rounded-lg"><div class="grid grid-cols-1 md:grid-cols-3 gap-8 items-center text-center"><div class="arena-card p-6 rounded-lg"><h3 id="arenaPlayerName" class="text-2xl font-bold text-blue-300">玩家</h3><div id="arenaPlayerAvatar" class="character-avatar my-4 character-avatar-default-bg"><i class="fas fa-user fa-6x text-white"></i></div><div class="text-left space-y-2"><p class="text-lg"><span class="text-gray-400">战斗力:</span> <span id="arenaPlayerAttack" class="text-red-400 font-bold">0</span></p><p class="text-lg"><span class="text-gray-400">防御力:</span> <span id="arenaPlayerDefense" class="text-blue-400 font-bold">0</span></p></div></div><div class="flex flex-col items-center justify-center space-y-4"><span class="text-7xl font-black text-red-500 floating">VS</span><div><label for="customBetInput" class="block text-sm font-medium text-gray-300 mb-1 text-center">自定义赌注</label><input type="number" id="customBetInput" placeholder="最低100" class="w-36 px-3 py-2 bg-gray-900 text-white text-center rounded border border-purple-500"><p class="text-xs text-gray-500 mt-1">需≥100, 且为100的倍数</p></div><button id="fightButton" onclick="startFight()" class="bg-gradient-to-r from-red-600 to-yellow-500 text-white text-2xl font-bold py-4 px-8 rounded-lg shadow-lg hover:scale-105 transition-transform">战斗吧！</button></div><div id="arenaOpponentCard" class="arena-card p-6 rounded-lg"><h3 id="arenaOpponentName" class="text-2xl font-bold text-red-300">???</h3><div id="arenaOpponentAvatar" class="character-avatar my-4 character-avatar-default-bg"><i class="fas fa-question fa-6x text-white"></i></div><div class="text-left space-y-2"><p class="text-lg"><span class="text-gray-400">战斗力:</span> <span id="arenaOpponentAttack" class="text-red-400 font-bold">?</span></p><p class="text-lg"><span class="text-gray-400">防御力:</span> <span id="arenaOpponentDefense" class="text-blue-400 font-bold">?</span></p></div></div></div></div></div>
-                    <div class="magic-border"><div class="magic-card p-6 rounded-lg"><h2 class="text-2xl font-bold text-indigo-300 text-center mb-4"><i class="fas fa-history mr-2"></i>战斗记录</h2><div class="grid grid-cols-1 md:grid-cols-2 gap-6"><div><h3 class="text-lg font-bold text-yellow-300 mb-2">胜场排名</h3><div id="winLossRanking" class="space-y-1 max-h-48 overflow-y-auto"></div></div><div><h3 class="text-lg font-bold text-gray-300 mb-2">最近对战</h3><div id="recentBattles" class="space-y-2 max-h-48 overflow-y-auto"></div></div></div></div></div>
+        <!-- ============ 公共休息室 ============ -->
+        <section data-section="common" class="space-y-6">
+            <div class="panel p-6 flex flex-col md:flex-row gap-6 items-center">
+                <div class="relative cursor-pointer" onclick="openCustomizationModal()" title="Click to customise your avatar and name">
+                    <div id="mainCharacterAvatar" class="avatar avatar-default"></div>
+                    <span id="levelBadge" class="absolute -bottom-3 left-1/2 transform -translate-x-1/2 btn-crimson text-xs font-bold px-3 py-1 rounded-full whitespace-nowrap">Lv.1</span>
                 </div>
-                <div id="exchangeContainer" class="hidden"><div class="magic-border mb-6"><div class="magic-card p-8 rounded-lg"><div class="flex justify-between items-center mb-6"><h2 class="text-3xl font-bold text-yellow-300 floating"><i class="fas fa-exchange-alt mr-2"></i> 魔法交易所</h2><button onclick="openListItemModal()" class="bg-gradient-to-r from-green-500 to-blue-500 text-white font-bold py-2 px-6 rounded-lg">上架物品</button></div><p class="text-gray-300 text-lg text-center mb-8">一个允许玩家之间自由交易装备与卡牌的神秘市场。</p><div id="exchangeListings" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6"></div></div></div></div>`;
-            const gameContainer = document.getElementById('gameContainer');
-            gameContainer.innerHTML = `<div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6"><div class="space-y-6"><div class="magic-border"><div class="magic-card p-6 rounded-lg"><h2 class="text-xl font-bold text-purple-300 mb-4"><i class="fas fa-store mr-2"></i>魔法装备商店</h2><div id="equipmentStore" class="space-y-3 max-h-80 overflow-y-auto"></div></div></div><div class="magic-border"><div class="magic-card p-6 rounded-lg"><h2 class="text-xl font-bold text-purple-300 mb-4"><i class="fas fa-scroll mr-2"></i>魔法卡牌商店</h2><div id="magicCardStoreContainer" class="space-y-3 max-h-80 overflow-y-auto"></div></div></div></div><div class="magic-border"><div class="magic-card p-6 rounded-lg"><h2 class="text-xl font-bold text-purple-300 mb-4 text-center"><i class="fas fa-user-astronaut mr-2"></i>我的角色</h2><div class="text-center mb-4"><div class="character-avatar character-avatar-default-bg" id="mainCharacterAvatar"></div><p id="mainCharacterName" class="text-gray-100 text-2xl font-bold mt-3"></p><button onclick="openCustomizationModal()" class="mt-2 bg-indigo-600 text-white px-4 py-1 rounded-full text-sm"><i class="fas fa-paint-brush mr-1"></i> 自定义</button></div><div class="bg-gray-800 p-4 rounded-lg"><h3 class="text-lg font-bold text-yellow-400 mb-3">角色属性</h3><div class="space-y-2"><div class="flex justify-between"><span>总攻击力:</span><span class="text-red-400 font-bold" id="totalAttack">0</span></div><div class="flex justify-between"><span>总防御力:</span><span class="text-blue-400 font-bold" id="totalDefense">0</span></div></div></div><div class="mt-4"><h3 class="text-lg font-bold text-green-400 mb-3">已装备物品</h3><div id="equippedItems" class="space-y-2 max-h-40 overflow-y-auto"></div></div></div></div><div class="magic-border"><div class="magic-card p-6 rounded-lg"><div class="text-center mb-4"><div class="text-3xl text-yellow-400 mb-2"><i class="fas fa-coins"></i></div><div class="text-xl font-bold text-yellow-400" id="playerGold">0</div><p class="text-gray-400">魔法金币</p></div><div class="space-y-3"><button onclick="refreshState()" class="w-full bg-indigo-600 text-white py-2 rounded"><i class="fas fa-sync-alt mr-2"></i>刷新金币</button><button onclick="saveGame()" class="w-full bg-blue-600 text-white py-2 rounded"><i class="fas fa-sign-out-alt mr-2"></i>退出登录</button></div></div></div></div><div class="magic-border"><div class="magic-card p-6 rounded-lg"><h2 class="text-xl font-bold text-purple-300 mb-4"><i class="fas fa-box mr-2"></i>魔法仓库 - 装备</h2><div id="inventory" class="grid grid-cols-8 md:grid-cols-10 lg:grid-cols-12 xl:grid-cols-15 gap-2 mb-6"></div><h2 class="text-xl font-bold text-purple-300 mb-4 mt-6"><i class="fas fa-layer-group mr-2"></i>魔法仓库 - 卡牌</h2><div id="magicCardsInventoryDisplay" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"></div></div></div>`;
-            attachEventListeners();
-        }
-        function attachEventListeners() { const f = document.getElementById('listItemForm'); if (f && !f.dataset.bound) { f.addEventListener('submit', handleListItemSubmit); f.dataset.bound = '1'; } }
+                <div class="flex-1 text-center md:text-left w-full">
+                    <div class="flex items-center justify-center md:justify-start gap-2">
+                        <h2 id="mainCharacterName" class="text-3xl md:text-4xl gold font-magic"></h2>
+                        <button onclick="openCustomizationModal()" class="text-gray-400 hover:text-white" title="Edit"><i class="fas fa-pen text-sm"></i></button>
+                    </div>
+                    <p id="levelTitle" class="text-sm text-gray-300 mt-1"></p>
+                    <div class="mt-2 max-w-xs mx-auto md:mx-0"><div class="progress"><div id="levelBar" style="width:0%"></div></div><p id="levelNext" class="text-xs text-gray-500 mt-1"></p></div>
+                    <div class="flex flex-wrap gap-4 justify-center md:justify-start mt-3 text-lg">
+                        <span class="gold font-bold"><i class="fas fa-coins mr-1"></i><span id="playerGold">0</span> Gold</span>
+                        <span class="text-pink-300 font-bold"><i class="fas fa-star mr-1"></i><span id="playerHonor">0</span> Honour</span>
+                    </div>
+                    <p class="text-sm italic text-gray-400 mt-3 font-magic">"It is our choices that show what we truly are, far more than our abilities."</p>
+                </div>
+                <div class="flex gap-3">
+                    <div class="tile px-5 py-4 text-center"><i class="fas fa-khanda text-red-400 text-xl"></i><p class="text-xs text-gray-400 mt-1">Attack</p><p id="totalAttack" class="text-2xl font-bold">0</p></div>
+                    <div class="tile px-5 py-4 text-center"><i class="fas fa-shield-alt text-blue-400 text-xl"></i><p class="text-xs text-gray-400 mt-1">Defence</p><p id="totalDefense" class="text-2xl font-bold">0</p></div>
+                </div>
+            </div>
 
-        // ===================== 渲染 =====================
-        function renderAll() { if (!gameState || !document.getElementById('gameContainer')) return; updateCharacterDisplay(); updateStatsUI(); renderEquippedItems(); renderInventory(); renderMagicCardsInventory(); renderEquipmentStore(); renderMagicCardStore(); renderLeaderboard(); renderWealthLeaderboard(); }
-        function updateCharacterDisplay() {
-            const avatarDiv = document.getElementById('mainCharacterAvatar'), nameP = document.getElementById('mainCharacterName');
-            if (!avatarDiv || !nameP) return;
-            nameP.textContent = gameState.characterName || '未命名角色';
-            setAvatar(avatarDiv, gameState.characterAvatar, '<i class="fas fa-user-astronaut fa-6x text-white opacity-75"></i>');
-        }
-        function updateStatsUI() {
-            const goldEl = document.getElementById('playerGold'); if (!goldEl) return;
-            goldEl.textContent = num(gameState.playerGold);
-            document.getElementById('totalAttack').textContent = sumStat(gameState.equippedItems, 'attack');
-            document.getElementById('totalDefense').textContent = sumStat(gameState.equippedItems, 'defense');
-        }
-        function renderEquippedItems() {
-            const container = document.getElementById('equippedItems'); if (!container) return;
-            const list = gameState.equippedItems || [];
-            if (list.length === 0) { container.innerHTML = '<p class="text-gray-500 text-center">暂无装备</p>'; return; }
-            container.innerHTML = list.map((item, index) => `<div class="flex items-center justify-between bg-gray-800 p-2 rounded"><div class="flex items-center space-x-2"><div class="w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-500 rounded flex items-center justify-center">${imgTag(item.image, item.name, 'w-6 h-6 object-cover rounded') || '<i class="fas fa-shield-alt text-white text-xs"></i>'}</div><span class="text-white text-sm">${esc(item.name)} (攻:${num(item.attack)} 防:${num(item.defense)})</span></div><button onclick="unequipItem(${index})" class="bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded text-xs" title="卸下"><i class="fas fa-times"></i></button></div>`).join('');
-        }
-        function renderInventory() {
-            const container = document.getElementById('inventory'); if (!container) return;
-            const list = gameState.inventory || [];
-            container.innerHTML = '';
-            list.forEach((item, i) => {
-                const slot = document.createElement('div');
-                const isEquipment = isEquipmentItem(item);
-                const basePrice = num(item.price), sellPrice = Math.floor(basePrice * 0.8);
-                const name = String(item.name ?? '');
-                const displayName = name.length > 8 ? name.substring(0, 7) + '...' : name;
-                const statsDisplay = isEquipment ? `(攻:${num(item.attack)} 防:${num(item.defense)})` : `(买入价:${basePrice})`;
-                const actionButtons = `<div class="flex space-x-1 mb-0.5">${isEquipment ? `<button class="bg-green-500 hover:bg-green-600 text-white px-1.5 py-0.5 rounded text-xxs leading-none" onclick="equipItemFromInventory(${i})" title="穿戴"><i class="fas fa-hand-sparkles"></i></button>` : '<div class="w-4 h-4"></div>'}<button class="bg-yellow-500 hover:bg-yellow-600 text-white px-1.5 py-0.5 rounded text-xxs leading-none" onclick="sellItemFromInventory(${i})" title="出售 (${sellPrice}金币)"><i class="fas fa-dollar-sign"></i></button></div>`;
-                slot.className = 'inventory-slot filled';
-                slot.innerHTML = `<div class="w-full h-full bg-gradient-to-br from-purple-600 to-pink-600 rounded flex flex-col items-center justify-between p-1 text-center">${imgTag(item.image, name, 'w-6 h-6 object-cover rounded mt-0.5') || '<i class="fas fa-scroll text-white text-lg mt-0.5"></i>'}<p class="text-white text-xxs leading-tight my-0.5" title="${esc(name + ' ' + statsDisplay)}">${esc(displayName)}</p>${actionButtons}</div>`;
-                container.appendChild(slot);
-            });
-            for (let i = list.length; i < INVENTORY_SIZE; i++) { const slot = document.createElement('div'); slot.className = 'inventory-slot'; slot.innerHTML = '<i class="fas fa-plus text-purple-500 opacity-50"></i>'; container.appendChild(slot); }
-        }
-        function renderMagicCardsInventory() {
-            const container = document.getElementById('magicCardsInventoryDisplay'); if (!container) return;
-            const list = gameState.magicCardsInventory || [];
-            if (list.length === 0) { container.innerHTML = '<p class="text-gray-400 text-center col-span-full">你的魔法卡牌收藏还是空的。</p>'; return; }
-            container.innerHTML = list.map((card, index) => { const sellPrice = Math.floor(num(card.price) * 0.8); return `<div class="magic-card p-4 rounded-lg flex flex-col justify-between"><div><h4 class="text-white font-bold text-md mb-1">${esc(card.name)}</h4><p class="text-gray-300 text-xs mb-3 leading-snug">${esc(card.description)}</p></div><div class="flex justify-end space-x-2 mt-auto"><button onclick="useMagicCard(${index})" class="bg-indigo-600 hover:bg-indigo-700 text-white px-2 py-1 rounded text-xs" title="使用卡牌"><i class="fas fa-magic mr-1"></i>使用</button><button onclick="sellMagicCardFromInventory(${index})" class="bg-yellow-500 hover:bg-yellow-600 text-white px-2 py-1 rounded text-xs" title="出售卡牌 (${sellPrice}金币)"><i class="fas fa-dollar-sign mr-1"></i>出售</button></div></div>`; }).join('');
-        }
-        function renderEquipmentStore() {
-            const container = document.getElementById('equipmentStore'); if (!container) return;
-            if (globalEquipmentStore.length === 0) { container.innerHTML = '<p class="text-gray-400 text-center">商店暂无魔法装备。</p>'; return; }
-            container.innerHTML = globalEquipmentStore.map(equipment => `<div class="equipment-item magic-card p-3 rounded-lg"><div class="flex items-center space-x-3"><div class="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg flex items-center justify-center">${imgTag(equipment.image_url, equipment.name, 'w-10 h-10 object-cover rounded') || '<i class="fas fa-hat-wizard text-white"></i>'}</div><div class="flex-1"><h4 class="text-white font-bold">${esc(equipment.name)}</h4><div class="text-xs text-gray-400"><span class="text-red-400">攻击: ${num(equipment.attack)}</span> | <span class="text-blue-400">防御: ${num(equipment.defense)}</span></div></div><div class="text-right"><div class="text-yellow-400 font-bold">${num(equipment.price)} <i class="fas fa-coins"></i></div><div class="mt-1"><button onclick="buyEquipment(${num(equipment.id)})" class="bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded text-xs" title="购买"><i class="fas fa-shopping-cart"></i></button></div></div></div></div>`).join('');
-        }
-        function renderMagicCardStore() {
-            const container = document.getElementById('magicCardStoreContainer'); if (!container) return;
-            if (globalMagicCardStore.length === 0) { container.innerHTML = '<p class="text-gray-400 text-center">商店暂无魔法卡牌。</p>'; return; }
-            container.innerHTML = globalMagicCardStore.map(card => `<div class="magic-card p-3 rounded-lg"><div class="flex items-center space-x-3"><div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-lg flex items-center justify-center">${imgTag(card.image_url, card.name, 'w-10 h-10 object-cover rounded') || '<i class="fas fa-scroll text-white"></i>'}</div><div class="flex-1"><h4 class="text-white font-bold">${esc(card.name)}</h4><p class="text-xs text-gray-400 truncate" title="${esc(card.description)}">${esc(card.description)}</p></div><div class="text-right"><div class="text-yellow-400 font-bold">${num(card.price)} <i class="fas fa-coins"></i></div><div class="mt-1"><button onclick="buyMagicCard(${num(card.id)})" class="bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded text-xs" title="购买"><i class="fas fa-shopping-cart"></i></button></div></div></div></div>`).join('');
-        }
-        async function renderLeaderboard() {
-            const container = document.getElementById('leaderboard'); if (!container) return;
-            container.innerHTML = '<p class="text-gray-400 text-center">正在加载...</p>';
-            try {
-                const top = await rpc('sw_leaderboard_combat', {}, false) || [];
-                container.innerHTML = top.length === 0 ? '<p class="text-gray-400 text-center">排行榜暂无数据。</p>'
-                    : top.map((p, i) => `<div class="flex justify-between items-center text-sm ${i < 3 ? 'text-yellow-300' : 'text-gray-300'}"><span><i class="fas ${i === 0 ? 'fa-crown' : 'fa-medal'} mr-2"></i>#${i + 1} ${esc(p.name)}</span><span class="font-bold">${num(p.attack)} 攻击力</span></div>`).join('');
-            } catch (e) { console.error('加载战斗力榜失败:', e); container.innerHTML = '<p class="text-red-400 text-center">加载排行榜失败。</p>'; }
-        }
-        async function renderWealthLeaderboard() {
-            const container = document.getElementById('wealthLeaderboard'); if (!container) return;
-            container.innerHTML = '<p class="text-gray-400 text-center">正在加载...</p>';
-            try {
-                const top = await rpc('sw_leaderboard_wealth', {}, false) || [];
-                container.innerHTML = top.length === 0 ? '<p class="text-gray-400 text-center">财富榜暂无数据。</p>'
-                    : top.map((p, i) => `<div class="flex justify-between items-center text-sm ${i < 3 ? 'text-yellow-300' : 'text-gray-300'}"><span><i class="fas ${i === 0 ? 'fa-gem' : 'fa-dollar-sign'} mr-2"></i>#${i + 1} ${esc(p.name)}</span><span class="font-bold">${num(p.gold)} <i class="fas fa-coins"></i></span></div>`).join('');
-            } catch (e) { console.error('加载财富榜失败:', e); container.innerHTML = '<p class="text-red-400 text-center">加载财富榜失败。</p>'; }
-        }
+            <div class="panel p-6" id="housePanel"></div>
 
-        // ===================== 游戏操作（全部交给服务器计算） =====================
-        async function buyEquipment(id) {
-            const item = globalEquipmentStore.find(e => Number(e.id) === Number(id));
-            if (!item) return alert('找不到该商品，可能已被下架。');
-            if (!confirm(`确定要花费 ${num(item.price)} 金币购买 "${item.name}" 吗？`)) return;
-            await act('sw_buy_product', { p_product_id: item.id }, '购买失败');
-        }
-        async function buyMagicCard(id) {
-            const card = globalMagicCardStore.find(c => Number(c.id) === Number(id));
-            if (!card) return alert('找不到该卡牌，可能已被下架。');
-            if (!confirm(`确定要花费 ${num(card.price)} 金币购买 "${card.name}" 吗？`)) return;
-            await act('sw_buy_product', { p_product_id: card.id }, '购买失败');
-        }
-        async function equipItemFromInventory(index) {
-            const item = (gameState.inventory || [])[index];
-            if (!item || !confirm(`是否装备 ${item.name}？`)) return;
-            await act('sw_equip_item', { p_index: index, p_item_id: String(item.id) }, '装备失败');
-        }
-        async function unequipItem(index) {
-            const item = (gameState.equippedItems || [])[index]; if (!item) return;
-            await act('sw_unequip_item', { p_index: index, p_item_id: String(item.id) }, '卸下失败');
-        }
-        async function sellItemFromInventory(index) {
-            const item = (gameState.inventory || [])[index]; if (!item) return;
-            if (!confirm(`确定要以 ${Math.floor(num(item.price) * 0.8)} 金币的价格出售 ${item.name} 吗？`)) return;
-            await act('sw_sell_item', { p_index: index, p_item_id: String(item.id) }, '出售失败');
-        }
-        async function useMagicCard(index) {
-            const card = (gameState.magicCardsInventory || [])[index]; if (!card) return;
-            if (!confirm(`确定要使用卡牌 "${card.name}" 吗？这张卡牌将会被消耗。`)) return;
-            const data = await act('sw_use_card', { p_index: index, p_item_id: String(card.id) }, '使用失败');
-            if (data) alert(`你使用了卡牌 "${card.name}"！\n效果: ${card.description}\n\n老师那边已经收到记录，请找老师兑现。`);
-        }
-        async function sellMagicCardFromInventory(index) {
-            const card = (gameState.magicCardsInventory || [])[index]; if (!card) return;
-            if (!confirm(`确定要以 ${Math.floor(num(card.price) * 0.8)} 金币的价格出售卡牌 "${card.name}" 吗？`)) return;
-            await act('sw_sell_card', { p_index: index, p_item_id: String(card.id) }, '出售失败');
-        }
+            <div class="panel p-6">
+                <div class="flex flex-wrap justify-between items-center gap-3 mb-4">
+                    <h3 class="panel-title text-xl"><i class="fas fa-scroll mr-2"></i>Task Board</h3>
+                    <div class="flex items-center gap-3"><span id="checkinInfo" class="text-sm text-gray-300"></span><button id="checkinButton" onclick="doCheckin()" class="btn-gold py-2 px-5 rounded-full"><i class="fas fa-calendar-check mr-1"></i>Daily Check-in</button></div>
+                </div>
+                <div id="taskBoard" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4"><p class="text-gray-400">Loading tasks...</p></div>
+            </div>
 
-        // ===================== 角色自定义 =====================
-        function openCustomizationModal() { document.getElementById('customNameInput').value = gameState.characterName || ''; document.getElementById('customAvatarUrlInput').value = ''; document.getElementById('customAvatarFileInput').value = ''; const modal = document.getElementById('characterCustomizationModal'); modal.classList.remove('hidden'); modal.classList.add('flex'); }
-        function closeCustomizationModal() { const modal = document.getElementById('characterCustomizationModal'); modal.classList.add('hidden'); modal.classList.remove('flex'); }
-        // 把本地图片缩小成 160×200 的 JPEG，直接存进数据库（不需要另外的图片服务器）
-        function resizeImage(file, width = 160, height = 200) {
-            return new Promise((resolve, reject) => {
-                if (!file.type.startsWith('image/')) return reject(new Error('请选择图片文件'));
-                const reader = new FileReader();
-                reader.onerror = () => reject(new Error('读取图片失败'));
-                reader.onload = () => {
-                    const img = new Image();
-                    img.onerror = () => reject(new Error('无法识别这张图片'));
-                    img.onload = () => {
-                        const canvas = document.createElement('canvas');
-                        canvas.width = width; canvas.height = height;
-                        const ctx = canvas.getContext('2d');
-                        const scale = Math.max(width / img.width, height / img.height);
-                        const w = img.width * scale, h = img.height * scale;
-                        ctx.drawImage(img, (width - w) / 2, (height - h) / 2, w, h);
-                        resolve(canvas.toDataURL('image/jpeg', 0.8));
-                    };
-                    img.src = reader.result;
-                };
-                reader.readAsDataURL(file);
-            });
-        }
-        async function saveCustomization() {
-            const newName = document.getElementById('customNameInput').value.trim();
-            const newUrl = document.getElementById('customAvatarUrlInput').value.trim();
-            const fileInput = document.getElementById('customAvatarFileInput');
-            const file = fileInput.files[0];
-            const saveButton = document.querySelector('#characterCustomizationModal button[onclick="saveCustomization()"]');
-            if (newName.length > MAX_NAME_LENGTH) return alert(`角色名不能超过 ${MAX_NAME_LENGTH} 个字。`);
-            if (!file && newUrl && !/^https?:\/\//i.test(newUrl)) return alert('头像地址必须以 http:// 或 https:// 开头。');
-            saveButton.disabled = true; saveButton.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>正在保存...';
-            try {
-                let avatar = null;
-                if (file) avatar = await resizeImage(file);
-                else if (newUrl) avatar = newUrl;
-                const data = await rpc('sw_update_profile', { p_character_name: newName || null, p_avatar: avatar });
-                gameState = data.gameState;
-                renderAll(); closeCustomizationModal(); alert('角色信息已更新！');
-            } catch (error) { handleError('保存失败', error); }
-            finally { saveButton.disabled = false; saveButton.innerHTML = '保存'; fileInput.value = ''; }
-        }
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="panel p-6">
+                    <h3 class="panel-title text-lg mb-4"><i class="fas fa-trophy mr-2"></i>Combat Record</h3>
+                    <div class="grid grid-cols-3 gap-3 text-center">
+                        <div class="tile py-3"><p class="text-xs text-gray-400">Victories</p><p id="recWins" class="text-2xl text-green-400 font-bold">0</p></div>
+                        <div class="tile py-3"><p class="text-xs text-gray-400">Defeats</p><p id="recLosses" class="text-2xl text-red-400 font-bold">0</p></div>
+                        <div class="tile py-3"><p class="text-xs text-gray-400">Win Rate</p><p id="recRate" class="text-2xl gold font-bold">0%</p></div>
+                    </div>
+                </div>
+                <div class="panel p-6">
+                    <h3 class="panel-title text-lg mb-4"><i class="fas fa-history mr-2"></i>Duel History</h3>
+                    <div id="myDuelHistory" class="space-y-1 text-sm max-h-48 overflow-y-auto"></div>
+                </div>
+            </div>
+        </section>
 
-        function switchView(viewName) {
-            document.getElementById('gameContainer').classList.add('hidden');
-            document.getElementById('arenaContainer').classList.add('hidden');
-            document.getElementById('exchangeContainer').classList.add('hidden');
-            document.querySelectorAll('.nav-button').forEach(btn => { btn.classList.remove('active', 'bg-pink-600'); btn.classList.add('bg-gray-600'); });
-            const map = { info: ['gameContainer', 'navInfoButton'], arena: ['arenaContainer', 'navArenaButton'], exchange: ['exchangeContainer', 'navExchangeButton'] };
-            const [containerId, btnId] = map[viewName] || map.info;
-            document.getElementById(containerId).classList.remove('hidden');
-            const btn = document.getElementById(btnId); btn.classList.add('active', 'bg-pink-600'); btn.classList.remove('bg-gray-600');
-            if (viewName === 'info') refreshState();
-            if (viewName === 'arena') renderArenaUI();
-            if (viewName === 'exchange') renderExchange();
-        }
-        function saveGame() { alert('你的进度已自动保存在服务器。即将退出登录。'); logout(); }
+        <!-- ============ 我的箱子 ============ -->
+        <section data-section="trunk" class="hidden space-y-6">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div class="panel p-6">
+                    <h3 class="panel-title text-lg mb-1"><i class="fas fa-user-shield mr-2"></i>Equipped</h3>
+                    <p class="text-xs text-gray-500 mb-3">One wand, robe, hat and accessory at a time</p>
+                    <div id="equippedItems" class="space-y-2"></div>
+                    <div class="mt-4 pt-3 border-t border-gray-700 text-sm space-y-1" id="statBreakdown"></div>
+                </div>
+                <div class="panel p-6 lg:col-span-2">
+                    <h3 class="panel-title text-lg mb-3"><i class="fas fa-box-open mr-2"></i>Magical Trunk <span class="text-xs text-gray-500 font-normal" id="invCount"></span></h3>
+                    <div id="inventory" class="flex flex-wrap gap-2"></div>
+                </div>
+            </div>
+            <div class="panel p-6">
+                <h3 class="panel-title text-lg mb-3"><i class="fas fa-layer-group mr-2"></i>Magic Cards</h3>
+                <div id="magicCardsInventoryDisplay" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"></div>
+            </div>
+        </section>
 
-        // ===================== 交易所 =====================
-        function isMyListing(listing) { return String(listing.sellerId) === String(gameState.userId); }
-        function openListItemModal() {
-            const select = document.getElementById('listItemSelect');
-            const equipment = (gameState.inventory || []).map((item, i) => `<option value="equipment:${i}">【装备】${esc(item.name)}（攻${num(item.attack)} 防${num(item.defense)}）</option>`);
-            const cards = (gameState.magicCardsInventory || []).map((card, i) => `<option value="card:${i}">【卡牌】${esc(card.name)}</option>`);
-            if (equipment.length + cards.length === 0) return alert('你的仓库里还没有可以出售的物品。（已穿戴的装备需要先卸下）');
-            select.innerHTML = equipment.concat(cards).join('');
-            document.getElementById('listItemModal').classList.remove('hidden'); document.getElementById('listItemModal').classList.add('flex');
-        }
-        function closeListItemModal() { document.getElementById('listItemModal').classList.remove('flex'); document.getElementById('listItemModal').classList.add('hidden'); document.getElementById('listItemForm').reset(); }
-        async function handleListItemSubmit(e) {
-            e.preventDefault();
-            const [itemType, indexStr] = document.getElementById('listItemSelect').value.split(':');
-            const index = parseInt(indexStr, 10);
-            const price = Number(document.getElementById('itemPriceInput').value);
-            if (!Number.isInteger(price) || price <= 0 || price > MAX_PRICE) return alert(`请输入 1 到 ${MAX_PRICE} 之间的整数价格！`);
-            const list = itemType === 'card' ? gameState.magicCardsInventory : gameState.inventory;
-            const item = list && list[index];
-            if (!item) return alert('找不到这件物品，请刷新后重试。');
-            if (!confirm(`确定以 ${price} 金币上架 "${item.name}" 吗？`)) return;
-            const data = await act('sw_exchange_create', { p_item_type: itemType, p_index: index, p_item_id: String(item.id), p_price: price }, '上架失败');
-            if (data) { alert(`"${item.name}" 已成功上架！`); closeListItemModal(); renderExchange(); }
-        }
-        async function renderExchange() {
-            const container = document.getElementById('exchangeListings'); if (!container) return;
-            container.innerHTML = '<p class="text-gray-400 text-center col-span-full">正在从魔法市场获取数据...</p>';
-            try {
-                currentListings = await rpc('sw_exchange_list', {}, false) || [];
-                if (currentListings.length === 0) { container.innerHTML = '<p class="text-gray-400 text-center col-span-full">交易所目前空空如也。</p>'; return; }
-                container.innerHTML = currentListings.map(listing => {
-                    const mine = isMyListing(listing);
-                    const detail = listing.itemType === 'card' ? `<p class="text-xs text-gray-400 mb-1 truncate" title="${esc(listing.description)}">${esc(listing.description)}</p>` : `<p class="text-xs text-gray-400 mb-1">攻 ${num(listing.attack)} · 防 ${num(listing.defense)}</p>`;
-                    const img = imgTag(listing.image, listing.name, 'w-full h-full object-cover') || `<i class="fas ${listing.itemType === 'card' ? 'fa-scroll' : 'fa-hat-wizard'} fa-3x text-purple-400"></i>`;
-                    return `<div class="magic-card p-4 rounded-lg flex flex-col justify-between"><div><div class="w-full h-40 bg-gray-900 rounded-lg mb-3 flex items-center justify-center overflow-hidden">${img}</div><h4 class="text-white font-bold text-lg truncate">${esc(listing.name)}</h4>${detail}<p class="text-xs text-purple-300 mb-3">由 ${esc(listing.sellerCharacterName)} 出售</p></div><div class="flex justify-between items-center mt-auto"><span class="text-yellow-400 font-bold text-xl">${num(listing.price)} <i class="fas fa-coins text-sm"></i></span>${mine ? `<button onclick="deleteListing(${num(listing.id)})" class="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-xs">下架</button>` : `<button onclick="purchaseListing(${num(listing.id)})" class="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-xs">购买</button>`}</div></div>`;
-                }).join('');
-            } catch (error) { console.error('渲染交易所失败:', error); container.innerHTML = '<p class="text-red-500 text-center col-span-full">无法加载市场数据。</p>'; }
-        }
-        async function purchaseListing(listingId) {
-            const listing = currentListings.find(l => Number(l.id) === Number(listingId));
-            if (!confirm(`确定要花 ${listing ? num(listing.price) : ''} 金币购买 "${listing ? listing.name : ''}" 吗？`)) return;
-            const data = await act('sw_exchange_buy', { p_listing_id: listingId }, '购买失败');
-            if (data) alert('购买成功！');
-            renderExchange();
-        }
-        async function deleteListing(listingId) {
-            if (!confirm('确定要下架这个商品吗？物品会退回你的仓库。')) return;
-            const data = await act('sw_exchange_cancel', { p_listing_id: listingId }, '下架失败');
-            if (data) alert('商品已下架，物品已退回仓库。');
-            renderExchange();
-        }
+        <!-- ============ 对角巷 ============ -->
+        <section data-section="alley" class="hidden space-y-6">
+            <div class="panel p-6">
+                <div class="flex flex-wrap justify-between items-end gap-3 mb-4">
+                    <div><h3 class="text-3xl gold font-magic">Diagon Alley Market</h3><p class="text-sm text-gray-400 italic">Purveyors of fine magical supplies</p></div>
+                    <span class="gold font-bold"><i class="fas fa-coins mr-1"></i><span class="sideGold">0</span> Gold</span>
+                </div>
+                <div id="alleyTabs" class="flex flex-wrap gap-2 mb-5"></div>
+                <div id="alleyGrid" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4"></div>
+            </div>
+        </section>
 
-        // ===================== 角斗场 =====================
-        function renderArenaUI() {
-            document.getElementById('arenaPlayerName').textContent = gameState.characterName || '未命名角色';
-            setAvatar(document.getElementById('arenaPlayerAvatar'), gameState.characterAvatar, '<i class="fas fa-user fa-6x text-white"></i>');
-            document.getElementById('arenaPlayerAttack').textContent = sumStat(gameState.equippedItems, 'attack');
-            document.getElementById('arenaPlayerDefense').textContent = sumStat(gameState.equippedItems, 'defense');
-            renderBattleHistory();
+        <!-- ============ 奥利凡德 ============ -->
+        <section data-section="ollivanders" class="hidden space-y-6">
+            <div class="panel p-6">
+                <h3 class="text-3xl gold font-magic">Ollivanders Wand Workshop</h3>
+                <p class="text-sm text-gray-400 italic mb-5">"The wand chooses the wizard." — Design a one-of-a-kind wand: wood, core, colour, decoration and enchantment.</p>
+                <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+                    <div class="xl:col-span-2 space-y-5" id="wandSteps"></div>
+                    <div class="tile p-5 h-fit" id="wandPreview"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============ 决斗俱乐部 ============ -->
+        <section data-section="duel" class="hidden space-y-6">
+            <div class="panel p-6 md:p-8">
+                <h3 class="text-3xl gold font-magic text-center">The Dueling Club</h3>
+                <p class="text-sm text-gray-400 italic text-center mb-6">Win: +3 honour. Lose: +1 for taking part. Duels never cost or lose gold.</p>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 items-center text-center">
+                    <div class="tile p-5">
+                        <div id="arenaPlayerAvatar" class="avatar avatar-sm avatar-default mx-auto"></div>
+                        <h4 id="arenaPlayerName" class="text-xl font-bold text-blue-300 mt-3"></h4>
+                        <p class="mt-2"><span class="text-gray-400">ATK</span> <span id="arenaPlayerAttack" class="text-red-400 font-bold">0</span> · <span class="text-gray-400">DEF</span> <span id="arenaPlayerDefense" class="text-blue-400 font-bold">0</span></p>
+                        <div id="arenaBuffs" class="text-xs text-yellow-300 mt-2 space-y-0.5"></div>
+                    </div>
+                    <div class="space-y-4">
+                        <div class="text-6xl font-black text-red-500 floating font-magic">VS</div>
+                        <div><p class="text-gray-300 text-sm">Duels left today</p><p class="text-3xl font-bold gold"><span id="duelsLeft">-</span> / <span id="duelLimit">-</span></p></div>
+                        <button id="fightButton" onclick="startFight()" class="btn-crimson text-xl font-bold py-3 px-10 rounded-full shadow-lg">Start Duel!</button>
+                    </div>
+                    <div class="tile p-5">
+                        <div id="arenaOpponentAvatar" class="avatar avatar-sm avatar-default mx-auto"><i class="fas fa-question fa-4x text-white"></i></div>
+                        <h4 id="arenaOpponentName" class="text-xl font-bold text-red-300 mt-3">???</h4>
+                        <p class="mt-2"><span class="text-gray-400">ATK</span> <span id="arenaOpponentAttack" class="text-red-400 font-bold">?</span> · <span class="text-gray-400">DEF</span> <span id="arenaOpponentDefense" class="text-blue-400 font-bold">?</span></p>
+                        <p id="arenaOpponentHouse" class="text-xs text-gray-400 mt-2"></p>
+                    </div>
+                </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="panel p-6"><h3 class="panel-title text-lg mb-3">Honour Rankings</h3><div id="winLossRanking" class="space-y-1 max-h-64 overflow-y-auto"></div></div>
+                <div class="panel p-6"><h3 class="panel-title text-lg mb-3">Recent Duels</h3><div id="recentBattles" class="space-y-1 max-h-64 overflow-y-auto text-sm"></div></div>
+            </div>
+        </section>
+
+        <!-- ============ 魔药课 ============ -->
+        <section data-section="potions" class="hidden space-y-6">
+            <div class="panel p-6">
+                <h3 class="text-3xl gold font-magic">Potions Classroom</h3>
+                <p class="text-sm text-gray-400 italic mb-5">Buy ingredients and brew potions from recipes. Potions cannot be sold — drink them for special effects.</p>
+                <div id="activeEffects" class="mb-5"></div>
+                <h4 class="font-bold text-gray-200 mb-3"><i class="fas fa-book mr-2 text-red-400"></i>Recipe Book</h4>
+                <div id="recipeList" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 mb-6"></div>
+                <h4 class="font-bold text-gray-200 mb-3"><i class="fas fa-seedling mr-2 text-green-400"></i>Apothecary</h4>
+                <div id="ingredientList" class="grid grid-cols-2 sm:grid-cols-4 gap-3"></div>
+            </div>
+            <div class="panel p-6">
+                <h3 class="panel-title text-lg mb-3"><i class="fas fa-wine-bottle mr-2"></i>Potions Cabinet</h3>
+                <div id="potionCabinet" class="flex flex-wrap gap-3"></div>
+            </div>
+        </section>
+
+        <!-- ============ 神奇动物 ============ -->
+        <section data-section="menagerie" class="hidden space-y-6">
+            <div class="panel p-6">
+                <h3 class="text-3xl gold font-magic">Magical Menagerie</h3>
+                <p class="text-sm text-gray-400 italic mb-5">Keep up to 3 creatures. Feed them once a day — after 3 days without food they get too hungry to help you.</p>
+                <div id="myCreatures" class="grid grid-cols-1 md:grid-cols-3 gap-4"></div>
+            </div>
+            <div class="panel p-6">
+                <h3 class="panel-title text-lg mb-3"><i class="fas fa-store mr-2"></i>Adopt a Creature</h3>
+                <div id="creatureShop" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4"></div>
+            </div>
+        </section>
+
+        <!-- ============ 谜语挑战 ============ -->
+        <section data-section="riddles" class="hidden space-y-6">
+            <div class="flex flex-wrap gap-2">
+                <button id="rTabTrial" onclick="riddleTab('trial')" class="px-5 py-2 rounded-full text-sm btn-crimson"><i class="fas fa-hat-wizard mr-1"></i>Wizarding World Trial</button>
+                <button id="rTabTeacher" onclick="riddleTab('teacher')" class="px-5 py-2 rounded-full text-sm btn-ghost"><i class="fas fa-chalkboard-teacher mr-1"></i>Teacher's Riddles</button>
+            </div>
+            <div id="trialPane" class="space-y-6">
+                <div class="panel p-6 md:p-8">
+                    <h3 class="text-3xl gold font-magic text-center">The Wizarding World Trial</h3>
+                    <p class="text-sm text-gray-400 italic text-center mb-5">"Wit beyond measure is man's greatest treasure." — How well do you know the world of Harry Potter?</p>
+                    <div id="trialRules" class="tile p-4 max-w-xl mx-auto mb-6 text-sm"></div>
+                    <div id="trialStats" class="grid grid-cols-3 gap-3 text-center max-w-md mx-auto mb-6"></div>
+                    <div id="trialCard" class="max-w-2xl mx-auto"></div>
+                </div>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div class="panel p-6"><h3 class="panel-title text-lg mb-3"><i class="fas fa-graduation-cap mr-2"></i>Top Scholars</h3><div id="trialBoard" class="space-y-1.5"></div></div>
+                    <div class="panel p-6"><h3 class="panel-title text-lg mb-3"><i class="fas fa-history mr-2"></i>My Recent Trials</h3><div id="trialRecent" class="space-y-1.5 text-sm"></div></div>
+                </div>
+            </div>
+            <div id="teacherPane" class="hidden space-y-6">
+                <div class="panel p-6 md:p-8">
+                    <h3 class="text-3xl gold font-magic text-center">Teacher's Riddles</h3>
+                    <p class="text-sm text-gray-400 italic text-center mb-6">Questions set by your teacher. One try per riddle: right answers earn honour, wrong answers cost nothing.</p>
+                    <div id="riddleStatus" class="grid grid-cols-3 gap-3 text-center max-w-md mx-auto mb-6"></div>
+                    <div id="riddleCard" class="max-w-2xl mx-auto"></div>
+                </div>
+                <div class="panel p-6"><h3 class="panel-title text-lg mb-3">Recent Answers</h3><div id="riddleRecent" class="space-y-2 text-sm"></div></div>
+            </div>
+        </section>
+
+        <!-- ============ 交易所 ============ -->
+        <section data-section="exchange" class="hidden space-y-6">
+            <div class="panel p-6">
+                <div class="flex flex-wrap justify-between items-center gap-3 mb-2">
+                    <h3 class="text-3xl gold font-magic">Magic Exchange</h3>
+                    <button onclick="openListItemModal()" class="btn-gold py-2 px-6 rounded-lg">List an Item</button>
+                </div>
+                <p class="text-sm text-gray-400 italic mb-6">Buy and sell equipment and cards with your classmates.</p>
+                <div id="exchangeListings" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"></div>
+            </div>
+        </section>
+
+        <!-- ============ 荣誉殿堂 ============ -->
+        <section data-section="halls" class="hidden space-y-6">
+            <div class="panel p-6"><h3 class="panel-title text-xl mb-4"><i class="fas fa-crown mr-2"></i>House Cup</h3><div id="houseCupHalls"></div></div>
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div class="panel p-6"><h3 class="panel-title text-lg mb-3"><i class="fas fa-khanda mr-2"></i>Power Rankings</h3><div id="leaderboard" class="space-y-1.5"></div></div>
+                <div class="panel p-6"><h3 class="panel-title text-lg mb-3"><i class="fas fa-gem mr-2"></i>Wealth Rankings</h3><div id="wealthLeaderboard" class="space-y-1.5"></div></div>
+                <div class="panel p-6"><h3 class="panel-title text-lg mb-3"><i class="fas fa-star mr-2"></i>Honour Rankings</h3><div id="honorLeaderboard" class="space-y-1.5"></div></div>
+            </div>
+        </section>
+    </main>
+</div></div>
+
+<!-- 角色自定义 -->
+<div id="characterCustomizationModal" class="fixed inset-0 z-50 modal-overlay items-center justify-center hidden p-4"><div class="panel p-6 w-full" style="max-width:24rem"><h3 class="text-xl font-bold gold font-magic mb-4">Customise Your Character</h3><div class="space-y-4"><div><label for="customNameInput" class="block text-sm text-gray-300 mb-1">Character name</label><input type="text" id="customNameInput" maxlength="20" class="field"></div><div><label for="customAvatarUrlInput" class="block text-sm text-gray-300 mb-1">Avatar link</label><input type="url" id="customAvatarUrlInput" placeholder="http(s)://..." class="field"></div><div><label for="customAvatarFileInput" class="block text-sm text-gray-300 mb-1">Or upload a picture</label><input type="file" id="customAvatarFileInput" accept="image/*" class="w-full text-sm text-gray-400"></div><div class="flex gap-3 pt-2"><button onclick="saveCustomization()" class="flex-1 btn-crimson py-2 rounded">Save</button><button type="button" onclick="closeCustomizationModal()" class="flex-1 btn-ghost py-2 rounded">Cancel</button></div></div></div></div>
+<!-- 交易所上架 -->
+<div id="listItemModal" class="fixed inset-0 z-50 modal-overlay items-center justify-center hidden p-4"><div class="panel p-6 w-full" style="max-width:24rem"><h3 class="text-xl font-bold gold font-magic mb-4">List an Item for Sale</h3><form id="listItemForm" class="space-y-4"><div><label for="listItemSelect" class="block text-sm text-gray-300 mb-1">Choose an item</label><select id="listItemSelect" class="field" required></select><p class="text-xs text-gray-500 mt-1">Only items in your trunk can be sold. Listed items leave your trunk and come back if you remove the listing.</p></div><input type="number" id="itemPriceInput" min="1" max="100000" step="1" placeholder="Price (whole number)" class="field" required><div class="flex gap-3"><button type="submit" class="flex-1 btn-crimson py-2 rounded">List It</button><button type="button" onclick="closeListItemModal()" class="flex-1 btn-ghost py-2 rounded">Cancel</button></div></form></div></div>
+<!-- 任务 -->
+<div id="taskModal" class="fixed inset-0 z-50 modal-overlay items-center justify-center hidden p-4"><div class="panel p-6 w-full relative" style="max-width:42rem;max-height:90vh;overflow-y:auto"><button onclick="closeTaskModal()" class="absolute top-3 right-4 text-gray-400 hover:text-white text-2xl" title="Close">&times;</button><div id="taskModalBody"></div></div></div>
+<!-- 大图 -->
+<div id="imageViewer" class="fixed inset-0 modal-overlay items-center justify-center hidden p-4" style="z-index:60" onclick="closeImageViewer()"><img id="imageViewerImg" alt="Large image" style="max-width:95vw;max-height:90vh" class="rounded-lg shadow-2xl"></div>
+<!-- 决斗结果 -->
+<div id="battleResultModal" class="fixed inset-0 z-50 modal-overlay items-center justify-center hidden p-4"><div class="panel p-8 text-center relative w-full" style="max-width:26rem"><div class="confetti-container" id="confettiContainer"></div><h2 id="battleResultText" class="text-6xl font-bold mb-4 font-magic">Victory!</h2><div id="battleResultWinnerAvatar" class="avatar avatar-sm avatar-default mx-auto my-4"></div><p class="text-xl text-white">The winner is <span id="battleResultWinnerName" class="font-bold gold"></span>!</p><p id="battleRewardText" class="text-green-400 mt-2 text-lg"></p><p id="battleExtraText" class="text-yellow-300 mt-1 text-sm"></p><button onclick="closeBattleResultModal()" class="mt-6 btn-ghost py-2 px-6 rounded">Close</button></div></div>
+<!-- 熬制中 -->
+<div id="brewingModal" class="fixed inset-0 z-50 modal-overlay items-center justify-center hidden"><div class="panel p-8 text-center"><div class="text-6xl bubble">⚗️</div><p class="mt-4 gold font-magic text-xl">Brewing...</p></div></div>
+<!-- 提示条 -->
+<div id="toast" class="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50 px-5 py-3 rounded-lg shadow-xl text-sm hidden"></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+// ===================== 配置 =====================
+const SUPABASE_URL = 'https://rxnaklyaiquqlmjymzkk.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_nb620Ckj_sCfdA_lE0yITg_3OSo6WQk';   // 只能填 publishable 公开密钥，绝对不要填 secret
+
+const INVENTORY_SIZE = 30, MAX_NAME_LENGTH = 20, MAX_PRICE = 100000, TOKEN_KEY = 'starwartsToken';
+const configReady = !SUPABASE_URL.includes('你的项目') && !SUPABASE_KEY.includes('你的');
+const sb = (configReady && window.supabase) ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: false } }) : null;
+
+let gameState = {}, globalEquipmentStore = [], globalMagicCardStore = [], currentListings = [], currentView = 'common';
+
+// ===================== 通用工具 =====================
+function esc(v) { return String(v ?? '').replace(/[&<>"'`]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;', '`': '&#96;' }[c])); }
+function safeUrl(v) {
+    if (!v) return ''; const s = String(v);
+    if (/^data:image\/(png|jpeg|webp|gif);base64,[A-Za-z0-9+/=]+$/.test(s)) return s;
+    try { const u = new URL(s); if (u.protocol === 'http:' || u.protocol === 'https:') return u.href; } catch (e) { }
+    return '';
+}
+function num(v) { const n = Number(v); return Number.isFinite(n) ? n : 0; }
+function imgTag(url, alt, cls) { const u = safeUrl(url); return u ? `<img src="${esc(u)}" alt="${esc(alt)}" class="${cls}">` : ''; }
+function setAvatar(el, url, fallback) {
+    if (!el) return; const u = safeUrl(url);
+    if (u) { el.innerHTML = ''; el.style.backgroundImage = `url("${u.replace(/["\\\n\r]/g, encodeURIComponent)}")`; el.classList.remove('avatar-default'); }
+    else { el.style.backgroundImage = ''; el.innerHTML = fallback; el.classList.add('avatar-default'); }
+}
+function sumStat(items, key) { return (items || []).reduce((s, it) => s + num(it && it[key]), 0); }
+function isEquipmentItem(it) { return !!it && Object.prototype.hasOwnProperty.call(it, 'attack') && Object.prototype.hasOwnProperty.call(it, 'defense'); }
+function $(id) { return document.getElementById(id); }
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+function fmtTime(t) { if (!t) return ''; const d = new Date(t); return `${MONTHS[d.getMonth()]} ${d.getDate()}, ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`; }
+function safeColor(c) { return /^#[0-9a-fA-F]{6}$/.test(String(c || '')) ? c : ''; }
+function itemIcon(it, size) { const col = safeColor(it && it.color); return `<i class="fas ${it && it.slot ? slotIcon(it.slot) : 'fa-scroll'} ${size || ''}" style="color:${col || '#fcd34d'}"></i>`; }
+function showModal(id) { const m = $(id); m.classList.remove('hidden'); m.classList.add('flex'); }
+function hideModal(id) { const m = $(id); m.classList.add('hidden'); m.classList.remove('flex'); }
+let toastTimer = null;
+function toast(msg, type = 'ok') {
+    const t = $('toast'); t.textContent = msg;
+    t.className = `fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50 px-5 py-3 rounded-lg shadow-xl text-sm ${type === 'error' ? 'bg-red-700 text-white' : 'bg-gray-900 text-yellow-200 border border-yellow-600'}`;
+    clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.add('hidden'), 3000);
+}
+
+// ===================== 与服务器通信 =====================
+async function rpc(fn, params = {}, needLogin = true) {
+    if (!sb) throw new Error('This site is not connected to its database yet. Please tell your teacher.');
+    if (needLogin) params = { p_token: localStorage.getItem(TOKEN_KEY) || '', ...params };
+    const { data, error } = await sb.rpc(fn, params);
+    if (error) { const err = new Error(tr(error.message || 'Request failed')); if (/登录已过期/.test(error.message || '')) err.sessionExpired = true; throw err; }
+    return data;
+}
+// 服务器返回的中文提示 → 英文（教师端仍然是中文，所以在学生页面这里翻译）
+const HOUSE_EN = { '格兰芬多': 'Gryffindor', '斯莱特林': 'Slytherin', '拉文克劳': 'Ravenclaw', '赫奇帕奇': 'Hufflepuff' };
+const MSG_EN = [
+    [/^(.+) 今天已经吃饱啦，明天再来喂吧$/, m => `${m[1]} is already full today. Come back tomorrow!`],
+    ['一次可以买 1-20 份', 'You can buy 1–20 at a time.'],
+    ['不能购买自己上架的商品', "You can't buy your own listing."],
+    ['今天已经签到过了，明天再来吧！', "You've already checked in today. Come back tomorrow!"],
+    [/^今天的 (\d+) 场决斗已经用完了，明天再来吧！$/, m => `You've used all ${m[1]} duels for today. Come back tomorrow!`],
+    ['价格需为 1 到 100000 之间的整数', 'Price must be a whole number from 1 to 100000.'],
+    [/^你已经是(.+)的一员了，想换学院请找老师$/, m => `You are already in ${HOUSE_EN[m[1]] || m[1]}. Ask your teacher if you want to change houses.`],
+    ['你最多同时上架 10 件物品', 'You can list at most 10 items at a time.'],
+    ['你的装备仓库已满', 'Your trunk is full.'],
+    ['你还没有这瓶魔药', "You don't have this potion yet."],
+    ['商品不存在或已下架', 'This item no longer exists or has been removed.'],
+    ['图片必须是 http/https 网址，或网页上传的较小图片', 'The image must be an http/https link or a small uploaded picture.'],
+    ['学院不正确', 'Invalid house.'],
+    ['密码需为 6-64 位', 'Passwords must be 6–64 characters long.'],
+    ['找不到这个配方', 'Recipe not found.'],
+    ['找不到这件商品，或它不是你上架的', "Listing not found, or it isn't yours."],
+    ['找不到这只神奇动物', 'Creature not found.'],
+    ['找不到这种材料', 'Ingredient not found.'],
+    ['找不到这种神奇动物', 'That creature is not available.'],
+    ['文字回复最多 2000 字', 'Your answer can be at most 2000 characters.'],
+    ['暂时没有可以挑战的对手', 'There are no opponents available right now.'],
+    ['最多上传 3 张照片', 'You can upload at most 3 photos.'],
+    ['最多只能同时养 3 只神奇动物', 'You can keep at most 3 creatures.'],
+    ['材料不够，先去买齐材料吧', 'Not enough ingredients — buy them first.'],
+    ['照片格式不正确或太大，请重新选择', 'That photo is the wrong format or too large. Please choose another.'],
+    ['物品不存在或数据已过期，请刷新页面', 'Item not found or out of date. Please refresh the page.'],
+    ['物品类型不正确', 'Invalid item type.'],
+    ['登录已过期，请重新登录', 'Your session has expired. Please log in again.'],
+    ['福灵剂效果最多叠加 3 次，先去决斗用掉吧', 'Felix Felicis stacks up to 3 times. Use some in duels first.'],
+    ['老师已关闭自助注册，请向老师领取账号', 'Sign-up is closed. Please ask your teacher for an account.'],
+    ['装备仓库已满', 'Your trunk is full.'],
+    ['装备仓库已满，无法卸下装备', 'Your trunk is full, so you cannot unequip this item.'],
+    ['装备仓库已满，请先腾出位置再下架', 'Your trunk is full. Make some space before removing the listing.'],
+    [/^角色名不能包含/, () => 'Character names cannot contain < > " \' ` & or \\.'],
+    ['角色名需为 1-20 个字', 'Character names must be 1–20 characters.'],
+    ['请写一些文字或上传照片再提交', 'Please write something or add a photo before submitting.'],
+    ['请选择木材、杖芯和外观', 'Please choose every part of your wand.'],
+    [/^账号 (.+) 已被注册$/, m => `The username "${m[1]}" is already taken.`],
+    ['账号只能用 3-20 位英文字母、数字或下划线', 'Usernames must be 3–20 letters, numbers or underscores.'],
+    ['这个任务已经关闭了', 'This task has been closed.'],
+    ['这个任务已经截止或关闭了', 'This task is past its deadline or closed.'],
+    ['这个任务已经通过了，不需要再提交', 'This task has already been approved — no need to resubmit.'],
+    ['这件商品已被买走或已下架', 'This item has already been sold or removed.'],
+    ['这道题你已经答过了', "You've already answered this riddle."],
+    ['这道题已经不存在了', 'This riddle no longer exists.'],
+    ['金币不足', 'Not enough gold.'],
+    [/^金币不足，喂食需要 (\d+) 金币$/, m => `Not enough gold. Feeding costs ${m[1]} gold.`],
+    [/^金币不足，定制这根魔杖需要 (\d+) 金币$/, m => `Not enough gold. This wand costs ${m[1]} gold.`],
+    ['账号或密码错误', 'Wrong username or password.'],
+    ['密码错误次数太多，账号已锁定 5 分钟', 'Too many wrong passwords. Your account is locked for 5 minutes.'],
+    [/^密码错误次数太多，请 (\d+) 分钟后再试$/, m => `Too many wrong passwords. Try again in ${m[1]} minute(s).`],
+    ['只有老师账号才能进行这个操作', 'Only teacher accounts can do this.']
+];
+function tr(msg) {
+    msg = String(msg || '');
+    for (const [k, v] of MSG_EN) {
+        if (typeof k === 'string') { if (msg === k) return v; }
+        else { const m = msg.match(k); if (m) return v(m); }
+    }
+    if (/schema cache|PGRST202|Could not find the function/i.test(msg)) return 'The game database needs an update. Please ask your teacher to run the latest setup script.';
+    if (/Failed to fetch|NetworkError|network/i.test(msg)) return 'Network error. Please check your connection and try again.';
+    return msg;
+}
+function handleError(prefix, error) {
+    console.error(prefix, error);
+    if (error.sessionExpired) { alert('Your session has expired. Please log in again.'); logout(true); return; }
+    toast(prefix ? `${prefix}: ${error.message}` : error.message, 'error');
+}
+async function act(fn, params, errorPrefix) {
+    try { const data = await rpc(fn, params); if (data && data.gameState) gameState = data.gameState; renderAll(); return data; }
+    catch (error) { handleError(errorPrefix, error); return null; }
+}
+
+// ===================== 等级与学院 =====================
+const LEVELS = [[0, 'First-Year Student'], [20, 'Second-Year Apprentice'], [50, 'Third-Year Wizard'], [100, 'Fourth-Year Wizard'], [180, 'Fifth-Year · O.W.L.s'], [300, 'Sixth-Year Wizard'], [450, 'Seventh-Year · N.E.W.T.s'], [650, 'Auror Trainee'], [900, 'Auror'], [1200, 'Grand Sorcerer']];
+function levelInfo(h) { let i = 0; while (i + 1 < LEVELS.length && h >= LEVELS[i + 1][0]) i++; const next = LEVELS[i + 1]; return { level: i + 1, title: LEVELS[i][1], cur: LEVELS[i][0], next: next ? next[0] : null, nextTitle: next ? next[1] : null }; }
+const HOUSES = {
+    gryffindor: { name: 'Gryffindor', icon: '🦁', motto: 'Bravery, daring, nerve and chivalry' },
+    slytherin: { name: 'Slytherin', icon: '🐍', motto: 'Cunning, ambition, leadership and resourcefulness' },
+    ravenclaw: { name: 'Ravenclaw', icon: '🦅', motto: 'Wisdom, creativity, learning and wit' },
+    hufflepuff: { name: 'Hufflepuff', icon: '🦡', motto: 'Loyalty, fairness, hard work and patience' }
+};
+const SLOTS = [['wand', 'Wand', 'fa-magic'], ['robe', 'Robe', 'fa-user-shield'], ['hat', 'Hat', 'fa-hat-wizard'], ['accessory', 'Accessory', 'fa-gem']];
+function slotName(slot) { const f = SLOTS.find(x => x[0] === slot); return f ? f[1] : 'Accessory'; }
+function slotIcon(slot) { const f = SLOTS.find(x => x[0] === slot); return f ? f[2] : 'fa-gem'; }
+
+// ===================== 启动 =====================
+document.addEventListener('DOMContentLoaded', async () => {
+    createStarfield();
+    $('passwordInput').addEventListener('keypress', e => { if (e.key !== 'Enter') return; if (!$('initialButtons').classList.contains('hidden')) login(); else register(); });
+    document.querySelectorAll('.nav-btn').forEach(b => b.addEventListener('click', () => switchView(b.dataset.view)));
+    $('listItemForm').addEventListener('submit', handleListItemSubmit);
+    if (!sb) { showMessage('loginError', configReady ? 'Could not load the game. Please check your connection and refresh.' : 'This site is not connected to its database yet.'); return; }
+    try { const s = await rpc('sw_public_settings', {}, false); if (s && s.registrationOpen === false) $('registerButton').classList.add('hidden'); } catch (e) { }
+    if (localStorage.getItem(TOKEN_KEY)) { try { gameState = await rpc('sw_get_state'); await enterGame(); } catch (e) { localStorage.removeItem(TOKEN_KEY); } }
+});
+function createStarfield() { const f = $('starfield'); for (let i = 0; i < 90; i++) { const s = document.createElement('div'); s.className = 'star'; s.style.left = Math.random() * 100 + '%'; s.style.top = Math.random() * 100 + '%'; s.style.width = s.style.height = Math.random() * 2.5 + 1 + 'px'; s.style.animationDelay = Math.random() * 2.5 + 's'; f.appendChild(s); } }
+function showMessage(id, msg, isError = true) { const d = $(id); d.textContent = msg; d.className = isError ? 'text-red-400 mb-2' : 'text-green-400 mb-2'; d.classList.remove('hidden'); }
+
+// ===================== 账号 =====================
+function showRegisterForm() { $('modalSubtitle').textContent = 'Usernames: letters, numbers or underscores'; $('regCharNameInput').classList.remove('hidden'); $('confirmPasswordInput').classList.remove('hidden'); $('initialButtons').classList.add('hidden'); $('registerButtons').classList.remove('hidden'); $('loginError').classList.add('hidden'); }
+function hideRegisterForm() { $('modalSubtitle').textContent = 'Log in or create an account'; $('regCharNameInput').classList.add('hidden'); $('confirmPasswordInput').classList.add('hidden'); $('initialButtons').classList.remove('hidden'); $('registerButtons').classList.add('hidden'); $('loginError').classList.add('hidden'); }
+async function register() {
+    const u = $('usernameInput').value.trim(), n = $('regCharNameInput').value.trim(), p = $('passwordInput').value, c = $('confirmPasswordInput').value;
+    if (!u || !p) return showMessage('loginError', 'Please enter a username and password.');
+    if (p !== c) return showMessage('loginError', 'The two passwords do not match.');
+    try { await rpc('sw_register', { p_username: u, p_password: p, p_character_name: n || null }, false); hideRegisterForm(); $('passwordInput').value = ''; $('confirmPasswordInput').value = ''; showMessage('loginError', 'Account created! Enter your password to log in.', false); }
+    catch (e) { showMessage('loginError', e.message); }
+}
+async function login() {
+    const u = $('usernameInput').value.trim(), p = $('passwordInput').value;
+    if (!u || !p) return showMessage('loginError', 'Please enter a username and password.');
+    try {
+        const r = await rpc('sw_login', { p_username: u, p_password: p }, false);
+        if (!r || !r.ok) return showMessage('loginError', tr((r && r.message) || 'Login failed.'));
+        localStorage.setItem(TOKEN_KEY, r.token); gameState = r.gameState; await enterGame();
+    } catch (e) { showMessage('loginError', e.message || 'Network error. Could not reach the server.'); }
+}
+async function enterGame() {
+    hideModal('loginRegisterModal'); $('loginRegisterModal').classList.add('hidden');
+    $('app').classList.remove('hidden');
+    await Promise.all([loadEquipmentStore(), loadMagicCardStore()]);
+    renderAll(); switchView('common');
+}
+function logout(skipServer) {
+    if (localStorage.getItem(TOKEN_KEY) && !skipServer) rpc('sw_logout').catch(() => { });
+    localStorage.removeItem(TOKEN_KEY); gameState = {};
+    $('app').classList.add('hidden'); $('loginRegisterModal').classList.remove('hidden'); $('loginRegisterModal').classList.add('flex');
+    $('passwordInput').value = ''; $('loginError').classList.add('hidden'); hideRegisterForm();
+}
+function saveGame() { if (confirm('Log out? Your progress is saved automatically.')) logout(); }
+async function refreshState() { try { gameState = await rpc('sw_get_state'); renderAll(); } catch (e) { handleError('Refresh failed', e); } }
+
+// ===================== 页面切换 =====================
+function switchView(view) {
+    currentView = view;
+    document.querySelectorAll('[data-section]').forEach(s => s.classList.toggle('hidden', s.dataset.section !== view));
+    document.querySelectorAll('.nav-btn').forEach(b => b.classList.toggle('active', b.dataset.view === view));
+    window.scrollTo({ top: 0 });
+    const loaders = {
+        common: () => { refreshState(); loadTaskBoard(); loadHouseCup('houseCupCommon'); loadMyDuels(); },
+        trunk: () => refreshState(),
+        alley: () => Promise.all([loadEquipmentStore(), loadMagicCardStore()]).then(renderAlley),
+        ollivanders: loadWandOptions,
+        duel: () => { refreshState().then(renderDuel); renderBattleHistory(); },
+        potions: loadPotionOptions,
+        menagerie: loadCreatureOptions,
+        riddles: () => riddleTab(currentRiddleTab),
+        exchange: renderExchange,
+        halls: () => { loadHouseCup('houseCupHalls'); renderLeaderboards(); }
+    };
+    (loaders[view] || (() => { }))();
+}
+
+// ===================== 渲染（根据存档） =====================
+function renderAll() {
+    if (!gameState || !gameState.userId) return;
+    document.querySelectorAll('.sideGold').forEach(e => e.textContent = num(gameState.playerGold));
+    document.querySelectorAll('.sideHonor').forEach(e => e.textContent = num(gameState.honor));
+    $('sideName').textContent = gameState.characterName || '';
+    renderCharacterCard(); renderHousePanel(); updateCheckinUI();
+    renderEquippedItems(); renderInventory(); renderMagicCardsInventory();
+    renderDuel(); renderAlley(); renderPotions(); renderCreatures(); renderWand();
+}
+function renderCharacterCard() {
+    setAvatar($('mainCharacterAvatar'), gameState.characterAvatar, '<i class="fas fa-hat-wizard fa-4x text-white opacity-70"></i>');
+    $('mainCharacterName').textContent = gameState.characterName || 'Unnamed Wizard';
+    const li = levelInfo(num(gameState.honor));
+    $('levelBadge').textContent = `Lv.${li.level}`;
+    $('levelTitle').textContent = `${li.title}${gameState.house ? ' · ' + HOUSES[gameState.house].name : ''}`;
+    $('levelBar').style.width = li.next ? `${Math.min(100, (num(gameState.honor) - li.cur) / (li.next - li.cur) * 100)}%` : '100%';
+    $('levelNext').textContent = li.next ? `${li.next - num(gameState.honor)} more honour to reach Lv.${li.level + 1} "${li.nextTitle}"` : 'Maximum level reached!';
+    $('playerGold').textContent = num(gameState.playerGold); $('playerHonor').textContent = num(gameState.honor);
+    $('totalAttack').textContent = num(gameState.totalAttack); $('totalDefense').textContent = num(gameState.totalDefense);
+}
+let houseRendered;
+function renderHousePanel() {
+    const p = $('housePanel'); if (!p) return;
+    if (houseRendered === (gameState.house || null) && $('houseCupCommon')) return;
+    houseRendered = gameState.house || null;
+    if (!gameState.house) {
+        p.innerHTML = `<div class="flex items-center gap-4 mb-4"><div class="w-14 h-14 rounded-full border-2 border-red-700 flex items-center justify-center text-2xl">🎩</div><div><h3 class="gold font-magic text-xl">The Sorting Ceremony</h3><p class="text-sm text-gray-400 italic">Choose wisely, for the hat makes no mistakes. You cannot change it yourself afterwards.</p></div></div>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3">${Object.entries(HOUSES).map(([k, h]) => `<button onclick="chooseHouse('${k}')" class="house-${k} house-badge rounded-lg p-4 text-center hover:opacity-90"><div class="text-3xl">${h.icon}</div><div class="font-magic text-lg mt-1">${h.name}</div><div class="text-xs opacity-80 mt-1">${h.motto}</div></button>`).join('')}</div>
+        <div id="houseCupCommon" class="mt-5"></div>`;
+    } else {
+        const h = HOUSES[gameState.house];
+        p.innerHTML = `<div class="flex flex-col md:flex-row gap-5"><div class="house-${gameState.house} house-badge rounded-xl p-5 text-center md:w-56 flex-shrink-0"><div class="text-5xl">${h.icon}</div><div class="font-magic text-2xl mt-2">${h.name}</div><div class="text-xs opacity-80 mt-1">${h.motto}</div></div><div class="flex-1"><h3 class="panel-title text-lg mb-3"><i class="fas fa-crown mr-2"></i>House Cup</h3><div id="houseCupCommon"></div></div></div>`;
+    }
+    loadHouseCup('houseCupCommon');
+}
+async function chooseHouse(house) {
+    if (!confirm(`Join ${HOUSES[house].name}? You cannot change it yourself afterwards (ask your teacher).`)) return;
+    const d = await act('sw_choose_house', { p_house: house }, 'Sorting failed');
+    if (d) toast(`🎩 The Sorting Hat shouts: "${HOUSES[house].name.toUpperCase()}!"`);
+}
+async function loadHouseCup(targetId) {
+    const box = $(targetId); if (!box) return;
+    try {
+        const list = await rpc('sw_house_cup', {}, false) || [];
+        const max = Math.max(1, ...list.map(h => num(h.total)));
+        box.innerHTML = list.map((h, i) => `<div class="mb-2"><div class="flex justify-between text-sm mb-1"><span>${i === 0 && num(h.total) > 0 ? '🏆 ' : ''}${HOUSES[h.house].icon} ${HOUSES[h.house].name} <span class="text-xs text-gray-500">${num(h.members)} ${num(h.members) === 1 ? 'member' : 'members'}</span></span><span class="gold font-bold">${num(h.total)}</span></div><div class="progress" style="height:8px"><div class="house-${h.house}" style="width:${Math.max(2, num(h.total) / max * 100)}%;background:var(--hc)"></div></div><p class="text-xs text-gray-500 mt-0.5">Members' honour ${num(h.honor)} + teacher bonus ${num(h.bonus)}</p></div>`).join('');
+    } catch (e) { box.innerHTML = `<p class="text-red-400 text-sm">${esc(e.message)}</p>`; }
+}
+
+// ===================== 签到 / 任务 =====================
+function updateCheckinUI() {
+    const b = $('checkinButton'); if (!b) return;
+    const done = !!gameState.checkedInToday, streak = num(gameState.checkinStreak);
+    b.disabled = done; b.innerHTML = done ? '<i class="fas fa-check mr-1"></i>Checked in today' : '<i class="fas fa-calendar-check mr-1"></i>Daily Check-in +2';
+    $('checkinInfo').textContent = streak > 0 ? `${streak}-day streak` : '7-day streak bonus: +5';
+}
+async function doCheckin() { const d = await act('sw_checkin', {}, 'Check-in failed'); if (d) toast(`Checked in! +${num(d.gained)} honour · ${num(d.streak)}-day streak${num(d.gained) > 2 ? ' · 7-day bonus!' : ''}`); }
+const TASK_TYPES = { daily: ['Daily Task', 'bg-green-700'], honor: ['Honour Homework', 'bg-purple-700'], bounty: ['Bounty', 'bg-yellow-700'] };
+const STATUS_TEXT = { pending: ['Awaiting review', 'text-blue-300'], approved: ['Approved', 'text-green-400'], rejected: ['Not approved', 'text-red-400'] };
+function typeBadge(type) { const [l, c] = TASK_TYPES[type] || ['Task', 'bg-gray-600']; return `<span class="${c} text-white text-xs px-2 py-0.5 rounded-full whitespace-nowrap">${l}</span>`; }
+function statusLine(my, open) {
+    if (!my) return `<span class="${open ? 'text-gray-300' : 'text-gray-500'}">${open ? 'Not submitted' : 'Closed'}</span>`;
+    const [l, c] = STATUS_TEXT[my.status] || ['', ''];
+    const g = num(my.goldChange) ? ` <span class="gold">${my.goldChange > 0 ? '+' : ''}${num(my.goldChange)} gold</span>` : '';
+    return `<span class="${c} font-bold">${l}</span>${g}`;
+}
+async function loadTaskBoard() {
+    const board = $('taskBoard');
+    try {
+        const tasks = await rpc('sw_list_tasks') || [];
+        board.innerHTML = tasks.length ? tasks.map(t => `<div onclick="openTask(${num(t.id)})" class="cursor-pointer tile p-4 hover:border-yellow-600 transition"><div class="flex justify-between items-center mb-2">${typeBadge(t.type)}${num(t.rewardGold) ? `<span class="gold text-sm font-bold">${num(t.rewardGold)} <i class="fas fa-coins"></i></span>` : ''}</div><h4 class="text-white font-bold mb-1">${esc(t.title)}${t.hasImage ? ' <i class="fas fa-image text-purple-300 text-xs"></i>' : ''}</h4><p class="text-gray-400 text-xs mb-3 overflow-hidden" style="max-height:2.6em">${esc(t.content)}</p><div class="flex justify-between items-center text-xs"><span class="text-gray-500">${t.type === 'daily' ? 'Today' : (t.deadline ? `Due ${fmtTime(t.deadline)}` : 'No deadline')}</span><span>${statusLine(t.my, t.open)}</span></div></div>`).join('')
+            : '<p class="text-gray-400 col-span-full text-center">No tasks yet. Don\'t forget to check in!</p>';
+    } catch (e) { if (e.sessionExpired) return handleError('', e); board.innerHTML = `<p class="text-red-400 col-span-full">${esc(e.message)}</p>`; }
+}
+let pendingPhotos = [];
+async function openTask(taskId) {
+    const body = $('taskModalBody'); body.innerHTML = '<p class="text-gray-300">Opening task...</p>'; showModal('taskModal'); pendingPhotos = [];
+    try {
+        const t = await rpc('sw_get_task', { p_task_id: taskId }), my = t.my, canSubmit = t.open && (!my || my.status !== 'approved'), img = safeUrl(t.image);
+        body.innerHTML = `
+            <div class="flex items-center gap-2 mb-2">${typeBadge(t.type)}${num(t.rewardGold) ? `<span class="gold text-sm font-bold">Reward: ${num(t.rewardGold)} gold</span>` : ''}</div>
+            <h3 class="text-2xl font-bold text-white mb-1 font-magic">${esc(t.title)}</h3>
+            <p class="text-xs text-gray-400 mb-4">${t.type === 'daily' ? 'Daily task: you can submit once every day' : (t.deadline ? `Deadline: ${fmtTime(t.deadline)}` : 'No deadline')}${t.open ? '' : ' · <span class="text-red-400">Closed</span>'}</p>
+            ${t.content ? `<div class="text-gray-200 whitespace-pre-wrap mb-4 leading-relaxed">${esc(t.content)}</div>` : ''}
+            ${img ? `<img src="${esc(img)}" alt="Task picture" onclick="showImage(this.src)" class="rounded-lg mb-4 cursor-zoom-in" style="max-height:20rem">` : ''}
+            ${my ? `<div class="tile p-3 mb-4"><p class="text-sm mb-1">My submission: ${statusLine(my, t.open)} <span class="text-gray-500 text-xs ml-2">${fmtTime(my.submittedAt)}</span></p>${my.comment ? `<p class="text-sm text-yellow-200 mb-1">Teacher's comment: ${esc(my.comment)}</p>` : ''}${my.text ? `<p class="text-gray-300 text-sm whitespace-pre-wrap">${esc(my.text)}</p>` : ''}<div class="flex flex-wrap gap-2 mt-2">${(my.images || []).map(u => safeUrl(u) ? `<img src="${esc(safeUrl(u))}" onclick="showImage(this.src)" class="w-20 h-20 object-cover rounded cursor-zoom-in">` : '').join('')}</div></div>` : ''}
+            ${canSubmit ? `<div class="border-t border-red-900 pt-4"><h4 class="font-bold gold mb-2">${my ? (my.status === 'rejected' ? 'Submit again' : 'Edit submission (replaces the previous one)') : 'Submit your work'}</h4>
+                <textarea id="taskText" rows="4" maxlength="2000" class="field mb-2" placeholder="Write your answer..."></textarea>
+                <label class="inline-block btn-ghost text-sm px-4 py-2 rounded cursor-pointer"><i class="fas fa-camera mr-1"></i>Take / choose photos (up to 3)<input id="taskPhotoInput" type="file" accept="image/*" multiple class="hidden" onchange="addTaskPhotos(this)"></label>
+                <div id="taskPhotoPreview" class="flex flex-wrap gap-2 mt-2"></div>
+                <button id="taskSubmitButton" onclick="submitTask(${num(t.id)})" class="w-full mt-4 btn-crimson font-bold py-3 rounded-lg">Submit</button></div>`
+                : (my && my.status === 'approved' ? '<p class="text-green-400 text-center font-bold">🎉 This task has been approved!</p>' : '')}`;
+    } catch (e) { body.innerHTML = `<p class="text-red-400">${esc(e.message)}</p>`; if (e.sessionExpired) { closeTaskModal(); handleError('', e); } }
+}
+function closeTaskModal() { hideModal('taskModal'); pendingPhotos = []; }
+function showImage(src) { $('imageViewerImg').src = src; showModal('imageViewer'); }
+function closeImageViewer() { hideModal('imageViewer'); }
+function loadImage(file) {
+    return new Promise((resolve, reject) => {
+        if (!file.type.startsWith('image/')) return reject(new Error('Please choose an image file.'));
+        const r = new FileReader(); r.onerror = () => reject(new Error('Could not read the image.'));
+        r.onload = () => { const img = new Image(); img.onerror = () => reject(new Error('This image could not be opened.')); img.onload = () => resolve(img); img.src = r.result; };
+        r.readAsDataURL(file);
+    });
+}
+async function compressPhoto(file) {
+    const img = await loadImage(file); let maxSide = 1280, q = 0.75;
+    for (let i = 0; i < 6; i++) {
+        const sc = Math.min(1, maxSide / Math.max(img.width, img.height)), c = document.createElement('canvas');
+        c.width = Math.round(img.width * sc); c.height = Math.round(img.height * sc);
+        const ctx = c.getContext('2d'); ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, c.width, c.height); ctx.drawImage(img, 0, 0, c.width, c.height);
+        const out = c.toDataURL('image/jpeg', q); if (out.length <= 440000) return out;
+        maxSide = Math.round(maxSide * 0.8); q = Math.max(0.5, q - 0.08);
+    }
+    throw new Error('That photo is too large. Please try another.');
+}
+async function resizeAvatar(file) {
+    const img = await loadImage(file), c = document.createElement('canvas'); c.width = 160; c.height = 200;
+    const sc = Math.max(160 / img.width, 200 / img.height), w = img.width * sc, h = img.height * sc;
+    c.getContext('2d').drawImage(img, (160 - w) / 2, (200 - h) / 2, w, h); return c.toDataURL('image/jpeg', 0.8);
+}
+async function addTaskPhotos(input) {
+    const files = Array.from(input.files || []); input.value = '';
+    for (const f of files) { if (pendingPhotos.length >= 3) { toast('You can upload at most 3 photos.', 'error'); break; } try { pendingPhotos.push(await compressPhoto(f)); } catch (e) { toast(e.message, 'error'); } }
+    renderPhotoPreview();
+}
+function renderPhotoPreview() { const b = $('taskPhotoPreview'); if (b) b.innerHTML = pendingPhotos.map((u, i) => `<div class="relative"><img src="${esc(u)}" class="w-20 h-20 object-cover rounded"><button onclick="pendingPhotos.splice(${i},1);renderPhotoPreview()" class="absolute -top-2 -right-2 bg-red-600 text-white rounded-full w-5 h-5 text-xs leading-none">&times;</button></div>`).join(''); }
+async function submitTask(taskId) {
+    const text = $('taskText').value.trim(); if (!text && !pendingPhotos.length) return toast('Please write something or add a photo before submitting.', 'error');
+    const btn = $('taskSubmitButton'); btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Submitting...';
+    try { await rpc('sw_submit_task', { p_task_id: taskId, p_text: text, p_images: pendingPhotos }); toast('Submitted! Waiting for your teacher to review it.'); closeTaskModal(); loadTaskBoard(); }
+    catch (e) { handleError('Submit failed', e); btn.disabled = false; btn.textContent = 'Submit'; }
+}
+
+// ===================== 战绩 =====================
+async function loadMyDuels() {
+    try {
+        const d = await rpc('sw_my_duels'), w = num(d.wins), l = num(d.losses);
+        $('recWins').textContent = w; $('recLosses').textContent = l; $('recRate').textContent = w + l ? `${Math.round(w / (w + l) * 100)}%` : '0%';
+        $('myDuelHistory').innerHTML = (d.history || []).length ? d.history.map(h => `<div class="flex justify-between border-b border-gray-800 py-1"><span>${h.won ? '<span class="text-green-400">Won</span>' : '<span class="text-red-400">Lost</span>'} vs ${esc(h.opponent)}</span><span class="text-gray-500 text-xs">${fmtTime(h.at)}</span></div>`).join('') : '<p class="text-gray-500 italic">The chronicles are empty.</p>';
+    } catch (e) { }
+}
+
+// ===================== 我的箱子 =====================
+function renderEquippedItems() {
+    const c = $('equippedItems'); const list = gameState.equippedItems || [];
+    c.innerHTML = SLOTS.map(([key, label, icon]) => {
+        const idx = list.findIndex(it => (it.slot || 'accessory') === key), it = idx >= 0 ? list[idx] : null;
+        return `<div class="flex items-center justify-between tile p-2"><div class="flex items-center gap-2 min-w-0"><span class="text-xs text-gray-400 w-8 flex-shrink-0">${label}</span><div class="w-8 h-8 flex-shrink-0 rounded flex items-center justify-center ${it ? 'bg-red-900' : 'bg-gray-800'}">${it ? (imgTag(it.image, it.name, 'w-6 h-6 object-cover rounded') || itemIcon(it, 'text-xs')) : `<i class="fas ${icon} text-gray-600 text-xs"></i>`}</div><span class="text-sm truncate ${it ? 'text-white' : 'text-gray-500'}">${it ? `${esc(it.name)} <span class="text-xs text-gray-400">ATK ${num(it.attack)} / DEF ${num(it.defense)}</span>${it.abilityName ? `<br><span class="text-xs text-yellow-300">✨ ${esc(it.abilityName)}</span>` : ''}` : 'Empty'}</span></div>${it ? `<button onclick="unequipItem(${idx})" class="text-red-400 hover:text-red-300 px-2" title="Unequip"><i class="fas fa-times"></i></button>` : ''}</div>`;
+    }).join('');
+    const eqA = sumStat(list, 'attack'), eqD = sumStat(list, 'defense'), cA = num(gameState.totalAttack) - eqA, cD = num(gameState.totalDefense) - eqD;
+    $('statBreakdown').innerHTML = `<div class="flex justify-between"><span class="text-gray-400">Equipment</span><span>ATK ${eqA} / DEF ${eqD}</span></div><div class="flex justify-between"><span class="text-gray-400">Creatures</span><span>ATK ${cA} / DEF ${cD}</span></div><div class="flex justify-between font-bold gold"><span>Total</span><span>ATK ${num(gameState.totalAttack)} / DEF ${num(gameState.totalDefense)}</span></div>${abilityLine()}`;
+}
+function renderInventory() {
+    const c = $('inventory'), list = gameState.inventory || [];
+    $('invCount').textContent = `${list.length} / ${INVENTORY_SIZE}`;
+    c.innerHTML = list.map((it, i) => {
+        const eq = isEquipmentItem(it), name = String(it.name ?? ''), dn = name.length > 6 ? name.slice(0, 5) + '…' : name, sp = Math.floor(num(it.price) * 0.8);
+        const tip = eq ? `[${slotName(it.slot)}] ${name} · ATK ${num(it.attack)} DEF ${num(it.defense)}${it.desc ? ' · ' + it.desc : ''}${it.abilityName ? ' · ✨ ' + it.abilityName + ': ' + (it.abilityDesc || '') : ''}` : name;
+        return `<div class="inventory-slot filled" title="${esc(tip)}"><div class="w-full h-full rounded flex flex-col items-center justify-between p-1 text-center">${imgTag(it.image, name, 'w-6 h-6 object-cover rounded mt-0.5') || `<span class="mt-0.5">${itemIcon(eq ? it : null, 'text-lg')}</span>`}<p class="text-white text-xxs leading-tight">${esc(dn)}</p><div class="flex gap-1">${eq ? `<button class="bg-green-700 hover:bg-green-600 text-white px-1.5 py-0.5 rounded text-xxs" onclick="equipItemFromInventory(${i})" title="Equip"><i class="fas fa-hand-sparkles"></i></button>` : ''}<button class="bg-yellow-700 hover:bg-yellow-600 text-white px-1.5 py-0.5 rounded text-xxs" onclick="sellItemFromInventory(${i})" title="Sell to the shop (${sp} gold)"><i class="fas fa-coins"></i></button></div></div></div>`;
+    }).join('') + Array.from({ length: Math.max(0, Math.min(6, INVENTORY_SIZE - list.length)) }, () => '<div class="inventory-slot"><i class="fas fa-plus text-gray-700"></i></div>').join('');
+}
+function renderMagicCardsInventory() {
+    const c = $('magicCardsInventoryDisplay'), list = gameState.magicCardsInventory || [];
+    c.innerHTML = list.length ? list.map((card, i) => `<div class="tile p-4 flex flex-col justify-between"><div><h4 class="text-white font-bold mb-1">${esc(card.name)}</h4><p class="text-gray-300 text-xs mb-3">${esc(card.description)}</p></div><div class="flex justify-end gap-2"><button onclick="useMagicCard(${i})" class="btn-crimson px-2 py-1 rounded text-xs"><i class="fas fa-magic mr-1"></i>Use</button><button onclick="sellMagicCardFromInventory(${i})" class="btn-ghost px-2 py-1 rounded text-xs">Sell ${Math.floor(num(card.price) * 0.8)}</button></div></div>`).join('')
+        : '<p class="text-gray-500 italic col-span-full">No magic cards yet. Visit Diagon Alley to find some.</p>';
+}
+async function equipItemFromInventory(i) {
+    const it = (gameState.inventory || [])[i]; if (!it) return;
+    const cur = (gameState.equippedItems || []).find(x => (x.slot || 'accessory') === (it.slot || 'accessory'));
+    if (cur && !confirm(`Equipping ${it.name} will replace your ${slotName(it.slot).toLowerCase()} ${cur.name} (it goes back to your trunk). Continue?`)) return;
+    const d = await act('sw_equip_item', { p_index: i, p_item_id: String(it.id) }, 'Could not equip'); if (d) toast(`Equipped ${it.name}${it.abilityName ? ' · ✨ ' + it.abilityName + ' active' : ''}`);
+}
+async function unequipItem(i) { const it = (gameState.equippedItems || [])[i]; if (!it) return; await act('sw_unequip_item', { p_index: i, p_item_id: String(it.id) }, 'Could not unequip'); }
+async function sellItemFromInventory(i) {
+    const it = (gameState.inventory || [])[i]; if (!it) return;
+    if (!confirm(`Sell ${it.name} for ${Math.floor(num(it.price) * 0.8)} gold?`)) return;
+    await act('sw_sell_item', { p_index: i, p_item_id: String(it.id) }, 'Could not sell');
+}
+async function useMagicCard(i) {
+    const c = (gameState.magicCardsInventory || [])[i]; if (!c || !confirm(`Use the card "${c.name}"? It will be used up.`)) return;
+    const d = await act('sw_use_card', { p_index: i, p_item_id: String(c.id) }, 'Could not use card');
+    if (d) alert(`You used "${c.name}"!\nEffect: ${c.description}\n\nYour teacher has been notified. Ask them to redeem it.`);
+}
+async function sellMagicCardFromInventory(i) {
+    const c = (gameState.magicCardsInventory || [])[i]; if (!c || !confirm(`Sell "${c.name}" for ${Math.floor(num(c.price) * 0.8)} gold?`)) return;
+    await act('sw_sell_card', { p_index: i, p_item_id: String(c.id) }, 'Could not sell');
+}
+
+// ===================== 对角巷 =====================
+let alleyFilter = 'all';
+async function loadEquipmentStore() { try { globalEquipmentStore = await rpc('sw_list_products', { p_type: 'equipment' }, false) || []; } catch (e) { globalEquipmentStore = []; } }
+async function loadMagicCardStore() { try { globalMagicCardStore = await rpc('sw_list_products', { p_type: 'card' }, false) || []; } catch (e) { globalMagicCardStore = []; } }
+function renderAlley() {
+    const tabs = [['all', 'All Items'], ['wand', 'Wands'], ['robe', 'Robes'], ['hat', 'Hats'], ['accessory', 'Accessories'], ['card', 'Magic Cards']];
+    $('alleyTabs').innerHTML = tabs.map(([k, l]) => `<button onclick="alleyFilter='${k}';renderAlley()" class="px-4 py-1.5 rounded-full text-sm ${alleyFilter === k ? 'btn-crimson' : 'btn-ghost'}">${l}</button>`).join('');
+    const eq = globalEquipmentStore.filter(e => alleyFilter === 'all' || e.slot === alleyFilter).map(e => ({ ...e, kind: 'equipment' }));
+    const cards = (alleyFilter === 'all' || alleyFilter === 'card') ? globalMagicCardStore.map(c => ({ ...c, kind: 'card' })) : [];
+    const items = [...eq, ...cards];
+    $('alleyGrid').innerHTML = items.length ? items.map(it => `<div class="tile p-4 flex flex-col"><div class="flex items-start gap-3"><div class="w-14 h-14 rounded-lg flex items-center justify-center flex-shrink-0 ${it.kind === 'card' ? 'bg-indigo-900' : 'bg-red-900'}">${imgTag(it.image_url, it.name, 'w-12 h-12 object-cover rounded') || `<i class="fas ${it.kind === 'card' ? 'fa-scroll' : slotIcon(it.slot)} text-yellow-300 text-xl"></i>`}</div><div class="min-w-0 flex-1"><p class="text-xs text-red-300 tracking-widest uppercase">${it.kind === 'card' ? 'Magic Card' : slotName(it.slot)}</p><h4 class="text-white font-bold">${esc(it.name)}</h4>${it.kind === 'card' ? `<p class="text-xs text-gray-400 mt-1">${esc(it.description)}</p>` : `<p class="text-xs mt-1"><span class="text-red-400">⚔ ATK +${num(it.attack)}</span>&nbsp;&nbsp;<span class="text-blue-400">🛡 DEF +${num(it.defense)}</span></p>`}</div></div><div class="flex justify-between items-center mt-4 pt-3 border-t border-gray-800"><span class="gold font-bold">${num(it.price)} <i class="fas fa-coins text-sm"></i></span><button onclick="buyProduct(${num(it.id)}, '${it.kind}')" class="btn-crimson px-4 py-1 rounded text-sm" ${num(gameState.playerGold) < num(it.price) ? 'disabled title="Not enough gold"' : ''}>Buy</button></div></div>`).join('')
+        : '<p class="text-gray-500 italic col-span-full text-center">Nothing in this category yet.</p>';
+}
+async function buyProduct(id, kind) {
+    const it = (kind === 'card' ? globalMagicCardStore : globalEquipmentStore).find(x => Number(x.id) === Number(id)); if (!it) return toast('That item is no longer available.', 'error');
+    if (!confirm(`Buy "${it.name}" for ${num(it.price)} gold?`)) return;
+    const d = await act('sw_buy_product', { p_product_id: it.id }, 'Purchase failed'); if (d) toast(`Bought ${it.name}! It's in your trunk.`);
+}
+
+// ===================== 奥利凡德（定制魔杖：木材 / 杖芯 / 颜色 / 装饰 / 魔法功能 / 名字） =====================
+let wandCfg = null, wandSel = { wood: null, core: null, color: 'natural', finish: 'plain', ability: 'none' };
+async function loadWandOptions() {
+    if (!wandCfg || !wandCfg.colors) { try { wandCfg = await rpc('sw_wand_options', {}, false); } catch (e) { $('wandSteps').innerHTML = `<p class="text-red-400">${esc(e.message)}</p>`; return; } }
+    renderWand();
+}
+function wandSvg(hex, finish, ability) {
+    const bands = { silver: '#e5e7eb', gold: '#facc15', runes: '#a78bfa' }[finish];
+    const glow = ability && ability !== 'none';
+    return `<svg viewBox="0 0 220 60" class="w-full" style="max-width:260px">
+        <defs><linearGradient id="wg" x1="0" x2="1"><stop offset="0" stop-color="${hex}"/><stop offset="1" stop-color="${hex}" stop-opacity=".75"/></linearGradient>
+        <filter id="glow"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
+        ${glow ? '<circle cx="208" cy="30" r="9" fill="#fde68a" opacity=".85" filter="url(#glow)"><animate attributeName="r" values="6;10;6" dur="1.6s" repeatCount="indefinite"/></circle>' : ''}
+        <path d="M14 26 L205 28.5 L205 31.5 L14 34 Z" fill="url(#wg)" stroke="rgba(0,0,0,.35)" stroke-width=".8"/>
+        <rect x="10" y="23" width="58" height="14" rx="6" fill="${hex}" stroke="rgba(0,0,0,.45)" stroke-width="1"/>
+        ${bands ? `<rect x="22" y="23" width="4" height="14" fill="${bands}"/><rect x="40" y="23" width="4" height="14" fill="${bands}"/><rect x="58" y="23" width="4" height="14" fill="${bands}"/>` : ''}
+        ${finish === 'runes' ? '<text x="78" y="33" font-size="8" fill="#c4b5fd" opacity=".9">ᚠ ᚱ ᚨ ᛗ</text>' : ''}
+    </svg>`;
+}
+function renderWand() {
+    if (!wandCfg || !wandCfg.colors || !$('wandSteps')) return;
+    const step = (n, title, inner) => `<div><h4 class="font-bold mb-2"><span class="btn-crimson text-xs rounded-full px-2 py-0.5 mr-2">${n}</span>${title}</h4>${inner}</div>`;
+    const cards = (key, list, statFn) => `<div class="grid grid-cols-2 md:grid-cols-4 gap-2">${list.map(o => `<div onclick="wandSel.${key}='${o.id}';renderWand()" class="choice p-3 ${wandSel[key] === o.id ? 'selected' : ''}"><div class="flex justify-between gap-1"><span class="font-bold text-white text-sm">${esc(o.name)}</span><span class="gold text-xs">${num(o.cost) ? num(o.cost) + 'g' : 'free'}</span></div><p class="text-xs text-gray-400 mt-1">${esc(o.desc || '')}</p><p class="text-xs mt-1">${statFn(o)}</p></div>`).join('')}</div>`;
+    const swatches = `<div class="flex flex-wrap gap-3">${wandCfg.colors.map(c => `<button onclick="wandSel.color='${c.id}';renderWand()" class="choice px-3 py-2 flex items-center gap-2 ${wandSel.color === c.id ? 'selected' : ''}"><span class="w-6 h-6 rounded-full border border-gray-500" style="background:${safeColor(c.hex)}"></span><span class="text-sm">${esc(c.name)}</span><span class="gold text-xs">${num(c.cost) ? num(c.cost) + 'g' : 'free'}</span></button>`).join('')}</div>`;
+    const stat = (o) => [num(o.attack) ? `<span class="text-red-400">ATK +${num(o.attack)}</span>` : '', num(o.defense) ? `<span class="text-blue-400">DEF +${num(o.defense)}</span>` : ''].filter(Boolean).join(' ') || '<span class="text-gray-500">—</span>';
+    const prevName = ($('wandName') || {}).value || '';
+    $('wandSteps').innerHTML =
+        step(1, 'Choose a wood', cards('wood', wandCfg.woods, stat)) +
+        step(2, 'Choose a core', cards('core', wandCfg.cores, stat)) +
+        step(3, 'Choose a colour', swatches) +
+        step(4, 'Choose a decoration', cards('finish', wandCfg.finishes, stat)) +
+        step(5, 'Choose an enchantment <span class="text-xs text-gray-400 font-normal">(works while the wand is equipped)</span>', cards('ability', wandCfg.abilities.map(o => ({ ...o, desc: o.id === 'none' ? o.desc : '' })), o => o.id === 'none' ? '<span class="text-gray-500">—</span>' : `<span class="text-yellow-300">✨ ${esc(o.desc)}</span>`)) +
+        step(6, 'Name your wand', `<input id="wandName" maxlength="20" class="field" placeholder="Leave blank to name it after the wood" value="${esc(prevName)}">`);
+    const pick = (k, list) => list.find(x => x.id === wandSel[k]);
+    const w = pick('wood', wandCfg.woods), c = pick('core', wandCfg.cores), col = pick('color', wandCfg.colors), f = pick('finish', wandCfg.finishes), ab = pick('ability', wandCfg.abilities);
+    const atk = num(w && w.attack) + num(c && c.attack) + num(ab && ab.attack), def = num(c && c.defense) + num(f && f.defense) + num(ab && ab.defense);
+    const cost = [w, c, col, f, ab].reduce((t, o) => t + num(o && o.cost), 0), ready = w && c, gold = num(gameState.playerGold);
+    const row = (label, val) => `<div class="flex justify-between"><span class="text-gray-400">${label}</span><span class="text-right">${val}</span></div>`;
+    $('wandPreview').innerHTML = `<h4 class="gold font-magic text-xl mb-2 text-center">Wand Preview</h4>
+        <div class="flex justify-center my-3">${wandSvg(safeColor(col && col.hex) || '#8b5a2b', wandSel.finish, wandSel.ability)}</div>
+        <div class="space-y-1.5 text-sm">${row('Wood', w ? esc(w.name) : '—')}${row('Core', c ? esc(c.name) : '—')}${row('Colour', col ? esc(col.name) : '—')}${row('Decoration', f ? esc(f.name) : '—')}${row('Enchantment', ab && ab.id !== 'none' ? `<span class="text-yellow-300">✨ ${esc(ab.name)}</span>` : 'None')}</div>
+        ${ab && ab.id !== 'none' ? `<p class="text-xs text-yellow-200 mt-2">${esc(ab.desc)}</p>` : ''}
+        <div class="grid grid-cols-2 gap-2 my-4 text-center"><div class="tile py-2"><p class="text-xs text-gray-400">Attack</p><p class="text-red-400 font-bold text-xl">+${atk}</p></div><div class="tile py-2"><p class="text-xs text-gray-400">Defence</p><p class="text-blue-400 font-bold text-xl">+${def}</p></div></div>
+        <div class="flex justify-between font-bold mb-4"><span>Total cost</span><span class="gold">${cost} gold</span></div>
+        <button onclick="craftWand()" class="w-full btn-gold py-3 rounded-lg" ${!ready || gold < cost ? 'disabled' : ''}>${!ready ? 'Choose a wood and a core first' : (gold < cost ? `Not enough gold (you have ${gold})` : 'Craft Wand')}</button>
+        <p class="text-xs text-gray-500 mt-2 text-center">Your new wand goes to your trunk. Equip it in the wand slot to use its enchantment.</p>`;
+}
+async function craftWand() {
+    const name = ($('wandName').value || '').trim();
+    if (!confirm('Craft this wand?')) return;
+    const d = await act('sw_craft_wand', { p_wood: wandSel.wood, p_core: wandSel.core, p_color: wandSel.color, p_finish: wandSel.finish, p_ability: wandSel.ability, p_name: name || null }, 'Crafting failed');
+    if (d) { toast(`✨ ${d.item.name} has chosen you! It's waiting in your trunk.`); $('wandName').value = ''; }
+}
+function abilityLine() {
+    const w = (gameState.equippedItems || []).find(x => x.slot === 'wand' && x.abilityName);
+    return w ? `<div class="text-xs text-yellow-300 mt-1">✨ ${esc(w.abilityName)}: ${esc(w.abilityDesc || '')}</div>` : '';
+}
+
+// ===================== 决斗俱乐部 =====================
+function renderDuel() {
+    if (!$('arenaPlayerName')) return;
+    $('arenaPlayerName').textContent = gameState.characterName || '';
+    setAvatar($('arenaPlayerAvatar'), gameState.characterAvatar, '<i class="fas fa-user fa-4x text-white"></i>');
+    const b = gameState.buffs || {}, ba = num(b.attackDuels) > 0 ? num(b.attack) : 0, bd = num(b.defenseDuels) > 0 ? num(b.defense) : 0;
+    $('arenaPlayerAttack').textContent = num(gameState.totalAttack) + ba; $('arenaPlayerDefense').textContent = num(gameState.totalDefense) + bd;
+    const fx = [];
+    if (ba) fx.push(`💪 Strength Potion: ATK +${ba} (${num(b.attackDuels)} duels left)`);
+    if (bd) fx.push(`🛡️ Shield Potion: DEF +${bd} (${num(b.defenseDuels)} duels left)`);
+    if (num(b.luck) > 0) fx.push(`🍀 Felix Felicis: 90% win chance for ${num(b.luck)} duel(s)`);
+    const wand = (gameState.equippedItems || []).find(x => x.slot === 'wand' && x.abilityName);
+    if (wand) fx.push(`✨ ${wand.abilityName}: ${wand.abilityDesc || ''}`);
+    $('arenaBuffs').innerHTML = fx.map(esc).join('<br>');
+    const left = num(gameState.duelsLeftToday); $('duelsLeft').textContent = left; $('duelLimit').textContent = num(gameState.duelLimit);
+    $('fightButton').disabled = left <= 0; $('fightButton').textContent = left <= 0 ? 'Come back tomorrow' : 'Start Duel!';
+}
+async function startFight() {
+    if (num(gameState.duelsLeftToday) <= 0) return toast("You've used all your duels for today. Come back tomorrow!", 'error');
+    const btn = $('fightButton'); btn.disabled = true; btn.textContent = 'Finding an opponent...';
+    $('arenaOpponentName').textContent = '???'; setAvatar($('arenaOpponentAvatar'), '', '<i class="fas fa-question fa-4x text-white"></i>'); $('arenaOpponentAttack').textContent = '?'; $('arenaOpponentDefense').textContent = '?'; $('arenaOpponentHouse').textContent = '';
+    try {
+        const r = await rpc('sw_duel'); gameState = r.gameState; const o = r.opponent || {};
+        $('arenaOpponentName').textContent = o.name || '???'; setAvatar($('arenaOpponentAvatar'), o.avatar, '<i class="fas fa-user-slash fa-4x text-white"></i>');
+        $('arenaOpponentAttack').textContent = num(o.attack); $('arenaOpponentDefense').textContent = num(o.defense); $('arenaOpponentHouse').textContent = o.houseKey && HOUSES[o.houseKey] ? `${HOUSES[o.houseKey].icon} ${HOUSES[o.houseKey].name}` : '';
+        setTimeout(() => showBattleResult(r), 900);
+    } catch (e) { handleError('Duel failed', e); renderDuel(); }
+}
+function showBattleResult(r) {
+    $('battleResultText').textContent = r.playerWon ? 'Victory!' : 'Defeat!';
+    $('battleResultText').className = `text-6xl font-bold mb-4 font-magic ${r.playerWon ? 'gold' : 'text-red-500'}`;
+    $('battleResultWinnerName').textContent = r.winnerName || '';
+    setAvatar($('battleResultWinnerAvatar'), r.winnerAvatar, '<i class="fas fa-hat-wizard fa-4x text-white"></i>');
+    $('battleRewardText').textContent = r.playerWon ? `+${num(r.honorGained)} honour` : `+${num(r.honorGained)} honour for taking part. Better luck next time!`;
+    $('battleExtraText').textContent = `Win chance this duel: ${num(r.winChance)}%${r.usedLuck ? ' (Felix Felicis)' : ''}`;
+    if (r.playerWon) createConfetti();
+    showModal('battleResultModal');
+}
+function closeBattleResultModal() { hideModal('battleResultModal'); $('confettiContainer').innerHTML = ''; renderAll(); renderBattleHistory(); }
+async function renderBattleHistory() {
+    const [rank, recent] = await Promise.allSettled([rpc('sw_honor_ranking', {}, false), rpc('sw_arena_recent', {}, false)]);
+    $('winLossRanking').innerHTML = rank.status === 'fulfilled' && rank.value.length ? rank.value.map((p, i) => `<div class="flex justify-between"><span><span class="font-bold mr-2 ${i < 3 ? 'gold' : ''}">${i + 1}.</span>${esc(p.name)}</span><span><span class="text-pink-300 font-bold">${num(p.honor)} honour</span> <span class="text-green-400 text-xs">${num(p.wins)} wins</span></span></div>`).join('') : '<p class="text-gray-500 italic">No honour earned yet.</p>';
+    $('recentBattles').innerHTML = recent.status === 'fulfilled' && recent.value.length ? recent.value.map(b => `<div><span class="text-green-400 font-bold">${esc(b.winner_name)}</span> defeated <span class="text-red-400 font-bold">${esc(b.loser_name)}</span></div>`).join('') : '<p class="text-gray-500 italic">No duels yet.</p>';
+}
+function createConfetti() { const c = $('confettiContainer'); c.innerHTML = ''; const colors = ['#e6b450', '#c0392b', '#fff', '#f59e0b']; for (let i = 0; i < 80; i++) { const d = document.createElement('div'); d.className = 'confetti'; d.style.left = Math.random() * 100 + '%'; d.style.backgroundColor = colors[i % colors.length]; d.style.animationDelay = Math.random() * 2 + 's'; c.appendChild(d); } }
+
+// ===================== 魔药课 =====================
+let potionCfg = null;
+async function loadPotionOptions() { if (!potionCfg) { try { potionCfg = await rpc('sw_potion_options', {}, false); } catch (e) { $('recipeList').innerHTML = `<p class="text-red-400 col-span-full">${esc(e.message)}</p>`; return; } } refreshState(); renderPotions(); }
+function renderPotions() {
+    if (!potionCfg || !$('recipeList')) return;
+    const ing = gameState.ingredients || {}, pots = gameState.potions || {}, ingMap = Object.fromEntries(potionCfg.ingredients.map(i => [i.id, i]));
+    const b = gameState.buffs || {}, fx = [];
+    if (num(b.attackDuels) > 0) fx.push(`💪 ATK +${num(b.attack)} (${num(b.attackDuels)} duels left)`);
+    if (num(b.defenseDuels) > 0) fx.push(`🛡️ DEF +${num(b.defense)} (${num(b.defenseDuels)} duels left)`);
+    if (num(b.luck) > 0) fx.push(`🍀 Felix Felicis ×${num(b.luck)}`);
+    if (num(gameState.duelLimit) > 5) fx.push(`⚡ ${num(gameState.duelLimit)} duels today`);
+    $('activeEffects').innerHTML = fx.length ? `<div class="tile p-3 text-sm text-yellow-200"><span class="text-gray-400 mr-2">Active effects:</span>${fx.map(esc).join(' &nbsp;·&nbsp; ')}</div>` : '';
+    $('recipeList').innerHTML = potionCfg.recipes.map(r => {
+        const can = r.ingredients.every(id => num(ing[id]) > 0);
+        return `<div class="tile p-4 flex flex-col"><div class="flex items-center gap-3"><span class="text-3xl">${r.emoji}</span><div><h5 class="font-bold text-white">${esc(r.name)}</h5><p class="text-xs text-yellow-200">${esc(r.desc)}</p></div></div><div class="flex flex-wrap gap-1 my-3">${r.ingredients.map(id => `<span class="chip ${num(ing[id]) > 0 ? 'text-green-300 border-green-700' : 'text-gray-500'}">${ingMap[id] ? ingMap[id].emoji + ' ' + esc(ingMap[id].name) : id}</span>`).join('')}</div><div class="flex justify-between items-center mt-auto"><span class="text-xs text-gray-400">Success rate ${Math.round(100 - r.difficulty * 0.6)}%</span><button onclick="brewPotion('${r.id}')" class="btn-crimson px-4 py-1 rounded text-sm" ${can ? '' : 'disabled title="Missing ingredients"'}>Brew</button></div></div>`;
+    }).join('');
+    $('ingredientList').innerHTML = potionCfg.ingredients.map(i => `<div class="tile p-3 text-center"><div class="text-2xl">${i.emoji}</div><p class="font-bold text-sm mt-1">${esc(i.name)}</p><p class="text-xs text-gray-400">Owned: ${num(ing[i.id])}</p><p class="gold text-sm">${num(i.price)} gold</p><div class="flex gap-1 justify-center mt-2"><button onclick="buyIngredient('${i.id}',1)" class="btn-ghost text-xs px-2 py-0.5 rounded">Buy 1</button><button onclick="buyIngredient('${i.id}',5)" class="btn-ghost text-xs px-2 py-0.5 rounded">Buy 5</button></div></div>`).join('');
+    const owned = potionCfg.recipes.filter(r => num(pots[r.id]) > 0);
+    $('potionCabinet').innerHTML = owned.length ? owned.map(r => `<div class="tile p-3 text-center w-36"><div class="text-3xl">${r.emoji}</div><p class="font-bold text-sm mt-1">${esc(r.name)} ×${num(pots[r.id])}</p><p class="text-xs text-gray-400 my-1">${esc(r.desc)}</p><button onclick="drinkPotion('${r.id}')" class="btn-gold text-xs px-3 py-1 rounded mt-1">Drink</button></div>`).join('') : '<p class="text-gray-500 italic">Your cabinet is empty.</p>';
+}
+async function buyIngredient(id, qty) { const d = await act('sw_buy_ingredient', { p_id: id, p_qty: qty }, 'Purchase failed'); if (d) toast(`Bought ${qty} × ${(potionCfg.ingredients.find(x => x.id === id) || {}).name || 'ingredient'}`); }
+async function brewPotion(id) {
+    showModal('brewingModal');
+    try {
+        const [d] = await Promise.all([rpc('sw_brew', { p_recipe: id }), new Promise(r => setTimeout(r, 1200))]);
+        hideModal('brewingModal'); gameState = d.gameState; renderAll();
+        if (d.success) toast(`${d.potion.emoji} You brewed ${d.potion.name}!`); else toast(`💥 The potion failed and the ingredients were lost... (success rate ${d.chance}%)`, 'error');
+    } catch (e) { hideModal('brewingModal'); handleError('Brewing failed', e); }
+}
+async function drinkPotion(id) {
+    const r = potionCfg.recipes.find(x => x.id === id); if (!confirm(`Drink ${r.name}? Effect: ${r.desc}`)) return;
+    const d = await act('sw_drink_potion', { p_recipe: id }, 'Could not drink'); if (d) toast(`${r.emoji} You drank ${r.name}: ${r.desc}`);
+}
+
+// ===================== 神奇动物 =====================
+let creatureCfg = null;
+const KIND_TEXT = { attack: v => `ATK +${v}`, defense: v => `DEF +${v}`, honor: v => `+${v} honour each feeding` };
+async function loadCreatureOptions() { if (!creatureCfg) { try { creatureCfg = await rpc('sw_creature_options', {}, false); } catch (e) { $('myCreatures').innerHTML = `<p class="text-red-400 col-span-full">${esc(e.message)}</p>`; return; } } refreshState(); renderCreatures(); }
+function renderCreatures() {
+    if (!creatureCfg || !$('myCreatures')) return;
+    const mine = gameState.creatures || [];
+    $('myCreatures').innerHTML = [0, 1, 2].map(i => {
+        const c = mine[i];
+        if (!c) return `<div class="tile p-6 text-center text-gray-500 flex flex-col items-center justify-center" style="min-height:12rem"><i class="fas fa-paw text-3xl mb-2 opacity-30"></i><p class="text-sm italic">Empty — adopt a creature below</p></div>`;
+        const kt = (KIND_TEXT[c.kind] || (() => ''))(num(c.value));
+        return `<div class="tile p-5 text-center ${c.active ? '' : 'opacity-75'}"><div class="text-5xl ${c.active ? 'floating' : ''}">${c.emoji || '🐾'}</div><h5 class="font-bold text-lg mt-2">${esc(c.nickname)}</h5><p class="text-xs text-gray-400">${esc(c.name)}</p><p class="text-sm mt-2 ${c.active ? 'text-yellow-200' : 'text-gray-500 line-through'}">${kt}</p><p class="text-xs mt-1 ${c.active ? 'text-green-400' : 'text-red-400'}">${c.active ? (c.fedToday ? 'Well fed and happy' : 'In good shape') : 'Starving — bonus inactive!'}</p><p class="text-xs mt-1 text-pink-300" title="Bond">${'❤'.repeat(Math.min(10, num(c.bond)))}${num(c.bond) > 10 ? ' ×' + num(c.bond) : ''}</p><div class="flex gap-2 justify-center mt-3"><button onclick="feedCreature('${esc(c.uid)}')" class="btn-gold text-xs px-3 py-1 rounded" ${c.fedToday ? 'disabled' : ''}>${c.fedToday ? 'Fed today' : `Feed (${num(c.food)} gold)`}</button><button onclick="releaseCreature('${esc(c.uid)}')" class="btn-ghost text-xs px-2 py-1 rounded" title="Release">Release</button></div></div>`;
+    }).join('');
+    const full = mine.length >= 3;
+    $('creatureShop').innerHTML = creatureCfg.map(c => `<div class="tile p-4 flex gap-3"><div class="text-4xl">${c.emoji}</div><div class="flex-1 min-w-0"><div class="flex justify-between"><h5 class="font-bold">${esc(c.name)}</h5><span class="gold text-sm">${num(c.price)} <i class="fas fa-coins"></i></span></div><p class="text-xs text-gray-400">${esc(c.desc)}</p><p class="text-xs text-yellow-200 mt-1">${(KIND_TEXT[c.kind] || (() => ''))(num(c.value))} · food ${num(c.food)} gold</p><button onclick="adoptCreature('${c.id}')" class="btn-crimson text-xs px-3 py-1 rounded mt-2" ${full || num(gameState.playerGold) < num(c.price) ? 'disabled' : ''}>${full ? 'You already have 3' : 'Adopt'}</button></div></div>`).join('');
+}
+async function adoptCreature(type) {
+    const c = creatureCfg.find(x => x.id === type); const nick = prompt(`Give your ${c.name} a name (optional):`, c.name); if (nick === null) return;
+    const d = await act('sw_adopt_creature', { p_type: type, p_nickname: nick.trim() || null }, 'Adoption failed'); if (d) toast(`${c.emoji} Welcome, ${nick.trim() || c.name}!`);
+}
+async function feedCreature(uid) { const d = await act('sw_feed_creature', { p_uid: uid }, 'Feeding failed'); if (d) toast(`Fed for ${num(d.food)} gold${num(d.honorGained) ? ` — it found you ${num(d.honorGained)} honour!` : ''}`); }
+async function releaseCreature(uid) { const c = (gameState.creatures || []).find(x => x.uid === uid); if (!c || !confirm(`Release ${c.nickname} back into the wild? You won't get any gold back.`)) return; const d = await act('sw_release_creature', { p_uid: uid }, 'Release failed'); if (d) toast(`${c.nickname} has returned to the wild.`); }
+
+// ===================== 谜语挑战 =====================
+let currentRiddle = null, riddleBusy = false;   // riddleBusy：正在答题或正在显示结果时，不要覆盖题目卡片
+async function loadRiddles() {
+    try {
+        const s = await rpc('sw_riddle_status');
+        $('riddleStatus').innerHTML = `<div class="tile py-3"><p class="text-xs text-gray-400">Riddles</p><p class="text-2xl font-bold">${num(s.total)}</p></div><div class="tile py-3"><p class="text-xs text-gray-400">Answered</p><p class="text-2xl font-bold text-blue-300">${num(s.answered)}</p></div><div class="tile py-3"><p class="text-xs text-gray-400">Correct</p><p class="text-2xl font-bold text-green-400">${num(s.correct)}</p></div>`;
+        $('riddleRecent').innerHTML = (s.recent || []).length ? s.recent.map(r => `<div class="tile p-3"><p class="text-white">${esc(r.question)}</p><p class="text-xs mt-1">${r.correct ? '<span class="text-green-400">✓ Correct</span>' : `<span class="text-red-400">✗ You chose "${esc(r.chosen)}"</span>`} · Answer: <span class="gold">${esc(r.answer)}</span></p></div>`).join('') : '<p class="text-gray-500 italic">No answers yet.</p>';
+        if (!riddleBusy) {
+            const remain = num(s.total) - num(s.answered);
+            $('riddleCard').innerHTML = remain > 0 ? `<div class="text-center"><p class="text-gray-300 mb-4"><span class="gold font-bold text-xl">${remain}</span> ${remain === 1 ? 'riddle remains' : 'riddles remain'} unproven</p><button onclick="nextRiddle()" class="btn-crimson text-lg px-10 py-3 rounded-full">Begin the Trial</button></div>` : `<p class="text-center text-gray-400 italic">${num(s.total) ? '🎉 You have answered every riddle. Wait for your teacher to add more!' : 'Your teacher has not added any riddles yet.'}</p>`;
         }
-        async function startFight() {
-            const fightButton = document.getElementById('fightButton');
-            const betInput = document.getElementById('customBetInput');
-            let betAmount = parseInt(betInput.value, 10);
-            if (isNaN(betAmount) || !betInput.value) betAmount = 100;
-            if (betAmount < 100 || betAmount % 100 !== 0) return alert('赌注必须大于等于100，且为100的倍数！');
-            if (num(gameState.playerGold) < betAmount) return alert(`魔法金币不足${betAmount}，无法战斗！`);
-            if (!confirm(`战斗需要花费 ${betAmount} 魔法金币，确定要开始吗？`)) return;
-            fightButton.disabled = true; fightButton.textContent = '匹配中...';
-            resetOpponentCard();
-            try {
-                const result = await rpc('sw_arena_fight', { p_bet: betAmount });
-                gameState = result.gameState; updateStatsUI();
-                const opponent = result.opponent || {};
-                document.getElementById('arenaOpponentName').textContent = opponent.name || '???';
-                setAvatar(document.getElementById('arenaOpponentAvatar'), opponent.avatar, '<i class="fas fa-user-slash fa-6x text-white"></i>');
-                document.getElementById('arenaOpponentAttack').textContent = num(opponent.attack);
-                document.getElementById('arenaOpponentDefense').textContent = num(opponent.defense);
-                setTimeout(() => showBattleResult(result), 1000);
-            } catch (error) {
-                handleError('战斗失败', error);
-                fightButton.disabled = false; fightButton.textContent = '战斗吧！';
+    } catch (e) { $('riddleCard').innerHTML = `<p class="text-center text-red-400">${esc(e.message)}</p>`; }
+}
+async function nextRiddle() {
+    try {
+        currentRiddle = await rpc('sw_next_riddle');
+        if (!currentRiddle) { riddleBusy = false; loadRiddles(); return; }
+        riddleBusy = true;
+        $('riddleCard').innerHTML = `<div class="tile p-6"><p class="text-xs gold mb-2">Correct answer: +${num(currentRiddle.honor)} honour</p><h4 class="text-xl text-white font-magic mb-5 leading-relaxed">${esc(currentRiddle.question)}</h4><div class="grid grid-cols-1 md:grid-cols-2 gap-3">${currentRiddle.options.map((o, i) => `<button id="opt-${i}" onclick="answerRiddle(${i})" class="choice p-4 text-left"><span class="gold font-bold mr-2">${'ABCD'[i]}.</span>${esc(o)}</button>`).join('')}</div><div id="riddleFeedback" class="mt-4"></div></div>`;
+    } catch (e) { handleError('Could not load the riddle', e); }
+}
+async function answerRiddle(i) {
+    if (!currentRiddle) return;
+    document.querySelectorAll('[id^="opt-"]').forEach(b => b.disabled = true);
+    try {
+        const r = await rpc('sw_answer_riddle', { p_riddle_id: currentRiddle.id, p_choice: i });
+        gameState = r.gameState; renderAll();
+        $(`opt-${r.answer}`).style.cssText = 'border-color:#22c55e;background:rgba(34,197,94,.15)';
+        if (!r.correct) $(`opt-${i}`).style.cssText = 'border-color:#ef4444;background:rgba(239,68,68,.15)';
+        $('riddleFeedback').innerHTML = `<p class="${r.correct ? 'text-green-400' : 'text-red-400'} font-bold mb-3">${r.correct ? `✓ Correct! +${num(r.honorGained)} honour` : "✗ Not quite — remember the right answer for next time!"}</p><button onclick="nextRiddle()" class="btn-gold px-6 py-2 rounded">Next Riddle</button>`;
+        currentRiddle = null; loadRiddles();
+    } catch (e) { handleError('Could not submit your answer', e); currentRiddle = null; riddleBusy = false; loadRiddles(); }
+}
+
+
+// ===================== 魔法世界挑战（哈利波特题库） =====================
+let currentRiddleTab = 'trial', trialQ = null, trialBusy = false, trialStatus = null, orderPicked = [];
+const QTYPE_LABEL = { choice: 'Multiple choice', truefalse: 'True or false', matching: 'Matching', ordering: 'Put in order' };
+function riddleTab(tab) {
+    currentRiddleTab = tab;
+    $('trialPane').classList.toggle('hidden', tab !== 'trial'); $('teacherPane').classList.toggle('hidden', tab !== 'teacher');
+    $('rTabTrial').className = `px-5 py-2 rounded-full text-sm ${tab === 'trial' ? 'btn-crimson' : 'btn-ghost'}`;
+    $('rTabTeacher').className = `px-5 py-2 rounded-full text-sm ${tab === 'teacher' ? 'btn-crimson' : 'btn-ghost'}`;
+    if (tab === 'trial') loadTrial(); else { riddleBusy = false; currentRiddle = null; loadRiddles(); }
+}
+async function loadTrial() {
+    try {
+        const s = trialStatus = await rpc('sw_hp_status'), r = s.rules || {}, run = s.run;
+        $('trialRules').innerHTML = `<p class="gold font-bold tracking-widest text-xs mb-2">RULES OF THE TRIAL</p><ul class="space-y-1 text-gray-300">
+            <li>🪙 Entry fee: <b class="gold">${num(r.entry)} gold</b> per trial</li>
+            <li>✅ Correct answer: <b class="text-green-400">+${num(r.reward)} gold</b> and continue</li>
+            <li>❌ Wrong answer: <b class="text-red-400">−${num(r.penalty)} gold</b> and the trial ends</li>
+            <li>📜 Questions you answer correctly never appear again. Questions you miss will come back later.</li></ul>`;
+        $('trialStats').innerHTML = `<div class="tile py-3"><p class="text-xs text-gray-400">Mastered</p><p class="text-2xl font-bold text-green-400">${num(s.mastered)}<span class="text-sm text-gray-500"> / ${num(s.total)}</span></p></div><div class="tile py-3"><p class="text-xs text-gray-400">To revisit</p><p class="text-2xl font-bold text-yellow-300">${num(s.missed)}</p></div><div class="tile py-3"><p class="text-xs text-gray-400">Best streak</p><p class="text-2xl font-bold gold">${num(s.best)}</p></div>`;
+        $('trialRecent').innerHTML = (s.recent || []).length ? s.recent.map(x => `<div class="flex justify-between border-b border-gray-800 py-1"><span>${num(x.correct)} correct · ${x.endReason === 'wrong' ? 'ended on a wrong answer' : x.endReason === 'quit' ? 'stopped early' : 'mastered everything!'}</span><span class="${num(x.goldWon) - num(x.goldLost) - num(x.entryFee) >= 0 ? 'text-green-400' : 'text-red-400'}">${(n => (n >= 0 ? '+' + n : '−' + Math.abs(n)))(num(x.goldWon) - num(x.goldLost) - num(x.entryFee))} gold</span></div>`).join('') : '<p class="text-gray-500 italic">No trials yet.</p>';
+        if (!trialBusy) {
+            if (run) {
+                $('trialCard').innerHTML = `<div class="text-center"><p class="text-gray-300 mb-4">You have a trial in progress: <b class="text-green-400">${num(run.correct)}</b> correct so far.</p><button onclick="nextTrialQuestion()" class="btn-crimson text-lg px-10 py-3 rounded-full">Continue the Trial</button></div>`;
+            } else if (num(s.mastered) >= num(s.total) && num(s.total) > 0) {
+                $('trialCard').innerHTML = '<p class="text-center gold font-magic text-xl">🎓 You have mastered every question. A true scholar of the wizarding world!</p>';
+            } else if (!num(s.total)) {
+                $('trialCard').innerHTML = '<p class="text-center text-gray-400 italic">The question bank is empty. Please ask your teacher to load the questions.</p>';
+            } else {
+                const enough = num(gameState.playerGold) >= num(r.entry);
+                $('trialCard').innerHTML = `<div class="text-center"><p class="text-gray-300 mb-4"><b class="gold text-xl">${num(s.total) - num(s.mastered)}</b> questions remain unproven.</p><button onclick="startTrial()" class="btn-crimson text-lg px-10 py-3 rounded-full" ${enough ? '' : 'disabled'}>Begin Trial (−${num(r.entry)} gold)</button>${enough ? '' : `<p class="text-red-400 text-sm mt-3">You need ${num(r.entry)} gold to enter. You have ${num(gameState.playerGold)}.</p>`}</div>`;
             }
         }
-        function resetOpponentCard() {
-            document.getElementById('arenaOpponentName').textContent = '???';
-            setAvatar(document.getElementById('arenaOpponentAvatar'), '', '<i class="fas fa-question fa-6x text-white"></i>');
-            document.getElementById('arenaOpponentAttack').textContent = '?';
-            document.getElementById('arenaOpponentDefense').textContent = '?';
+        rpc('sw_hp_leaderboard', {}, false).then(list => {
+            $('trialBoard').innerHTML = (list || []).length ? list.map((p, i) => `<div class="flex justify-between text-sm ${i < 3 ? 'gold' : 'text-gray-300'}"><span>${i === 0 ? '👑' : i < 3 ? '🏅' : `<span class="inline-block w-5 text-gray-500">${i + 1}</span>`} ${esc(p.name)}</span><span><b>${num(p.mastered)}</b> mastered <span class="text-xs text-gray-500">· best ${num(p.best)}</span></span></div>`).join('') : '<p class="text-gray-500 italic">No scholars yet. Be the first!</p>';
+        }).catch(() => { });
+    } catch (e) { $('trialCard').innerHTML = `<p class="text-center text-red-400">${esc(e.message)}</p>`; }
+}
+async function startTrial() {
+    const fee = num((trialStatus && trialStatus.rules || {}).entry);
+    if (!confirm(`Pay ${fee} gold to begin a new trial?\n\nCorrect: +${num(trialStatus.rules.reward)} gold. Wrong: −${num(trialStatus.rules.penalty)} gold and the trial ends.`)) return;
+    try {
+        const d = await rpc('sw_hp_start'); gameState = d.gameState; renderAll();
+        if (!d.resumed) toast(`The trial begins! −${fee} gold`);
+        nextTrialQuestion();
+    } catch (e) { handleError('Could not start', e); }
+}
+async function nextTrialQuestion() {
+    trialBusy = true;
+    try {
+        const d = await rpc('sw_hp_question');
+        if (d.done) { trialBusy = false; trialQ = null; toast('🎓 You have mastered every question!'); loadTrial(); return; }
+        trialQ = d.question; orderPicked = []; renderTrialQuestion(d.number, d.run);
+    } catch (e) { trialBusy = false; handleError('Could not load the question', e); loadTrial(); }
+}
+function trialHeader(number, run) {
+    return `<div class="flex flex-wrap justify-between items-center gap-2 mb-3 text-xs"><span><span class="btn-crimson rounded-full px-2 py-0.5 mr-2">Question ${num(number)}</span><span class="text-gray-400">${esc(trialQ.category || '')} · ${QTYPE_LABEL[trialQ.type] || ''}</span></span><span class="text-gray-400">This trial: <b class="text-green-400">${num(run && run.correct)}</b> correct · <b class="gold">+${num(run && run.goldWon)}</b> gold</span></div>`;
+}
+function renderTrialQuestion(number, run) {
+    const q = trialQ; let body = '';
+    if (q.type === 'choice') {
+        body = `<div class="grid grid-cols-1 md:grid-cols-2 gap-3">${q.options.map((o, i) => `<button id="topt-${i}" onclick="answerTrial({index:${i}})" class="choice p-4 text-left"><span class="gold font-bold mr-2">${'ABCD'[i]}.</span>${esc(o)}</button>`).join('')}</div>`;
+    } else if (q.type === 'truefalse') {
+        body = `<div class="grid grid-cols-2 gap-3"><button id="ttf-true" onclick="answerTrial({value:true})" class="choice p-5 text-lg font-bold text-green-300"><i class="fas fa-check mr-2"></i>True</button><button id="ttf-false" onclick="answerTrial({value:false})" class="choice p-5 text-lg font-bold text-red-300"><i class="fas fa-times mr-2"></i>False</button></div>`;
+    } else if (q.type === 'matching') {
+        body = `<div class="space-y-2">${q.left.map((l, i) => `<div class="flex flex-col sm:flex-row sm:items-center gap-2 tile p-3"><span class="font-bold text-white sm:w-1/2">${esc(l)}</span><select id="tm-${i}" class="field sm:w-1/2"><option value="">Choose a match...</option>${q.right.map((r, j) => `<option value="${j}">${esc(r)}</option>`).join('')}</select></div>`).join('')}</div><button id="trialSubmit" onclick="submitMatching()" class="w-full mt-4 btn-gold py-3 rounded-lg">Submit Answer</button>`;
+    } else {
+        body = `<p class="text-xs text-gray-400 mb-2">Tap the items in the correct order. Tap a numbered item to take it back.</p>
+            <div id="orderPicked" class="space-y-2 mb-3"></div><div id="orderPool" class="flex flex-wrap gap-2"></div>
+            <button id="trialSubmit" onclick="submitOrdering()" class="w-full mt-4 btn-gold py-3 rounded-lg" disabled>Submit Answer</button>`;
+    }
+    $('trialCard').innerHTML = `<div class="tile p-6">${trialHeader(number, run)}<h4 class="text-xl text-white font-magic mb-5 leading-relaxed">${esc(q.question)}</h4>${body}<div id="trialFeedback" class="mt-4"></div><div id="trialQuit" class="text-right mt-3"><button onclick="quitTrial()" class="text-xs text-gray-500 hover:text-gray-300 underline">End this trial</button></div></div>`;
+    if (q.type === 'ordering') renderOrdering();
+}
+function renderOrdering() {
+    const q = trialQ, pool = q.items.map((t, i) => i).filter(i => !orderPicked.includes(i));
+    $('orderPicked').innerHTML = orderPicked.map((i, k) => `<button onclick="orderPicked.splice(${k},1);renderOrdering()" class="choice w-full p-3 text-left flex items-center gap-3"><span class="btn-crimson rounded-full w-7 h-7 flex items-center justify-center text-sm flex-shrink-0">${k + 1}</span>${esc(q.items[i])}</button>`).join('');
+    $('orderPool').innerHTML = pool.map(i => `<button onclick="orderPicked.push(${i});renderOrdering()" class="choice px-4 py-2 text-sm">${esc(q.items[i])}</button>`).join('');
+    $('trialSubmit').disabled = orderPicked.length !== q.items.length;
+}
+function submitMatching() {
+    const q = trialQ, chosen = q.left.map((l, i) => $(`tm-${i}`).value);
+    if (chosen.some(v => v === '')) return toast('Please choose a match for every item.', 'error');
+    if (new Set(chosen).size !== chosen.length) return toast('Each answer can only be used once.', 'error');
+    answerTrial({ right: chosen.map(j => q.right[Number(j)]) });
+}
+function submitOrdering() { answerTrial({ order: orderPicked.map(i => trialQ.items[i]) }); }
+async function answerTrial(answer) {
+    if (!trialQ) return;
+    $('trialCard').querySelectorAll('button, select').forEach(el => { if (!el.closest('#trialFeedback')) el.disabled = true; });
+    try {
+        const d = await rpc('sw_hp_answer', { p_answer: answer });
+        gameState = d.gameState; renderAll(); $('trialQuit').classList.add('hidden');
+        const q = trialQ, ca = d.correctAnswer || {};
+        if (q.type === 'choice') { $(`topt-${ca.index}`).classList.add('correct'); if (!d.correct) $(`topt-${answer.index}`).classList.add('wrong'); }
+        if (q.type === 'truefalse') { $(`ttf-${ca.value}`).classList.add('correct'); if (!d.correct) $(`ttf-${answer.value}`).classList.add('wrong'); }
+        let reveal = '';
+        if (!d.correct) {
+            if (q.type === 'matching') reveal = `<div class="tile p-3 mt-2 text-sm"><p class="text-gray-400 mb-1">Correct matches:</p>${(ca.pairs || []).map(p => `<p>${esc(p.left)} → <span class="gold">${esc(p.right)}</span></p>`).join('')}</div>`;
+            if (q.type === 'ordering') reveal = `<div class="tile p-3 mt-2 text-sm"><p class="text-gray-400 mb-1">Correct order:</p>${(ca.order || []).map((t, k) => `<p>${k + 1}. <span class="gold">${esc(t)}</span></p>`).join('')}</div>`;
         }
-        function showBattleResult(result) {
-            const modal = document.getElementById('battleResultModal');
-            const title = document.getElementById('battleResultText');
-            title.textContent = result.playerWon ? '胜利!' : '失败!';
-            title.className = `text-6xl font-bold mb-4 ${result.playerWon ? 'text-yellow-300' : 'text-red-500'}`;
-            document.getElementById('battleResultWinnerName').textContent = result.winnerName || '';
-            setAvatar(document.getElementById('battleResultWinnerAvatar'), result.winnerAvatar, '<i class="fas fa-user-astronaut fa-6x text-white"></i>');
-            const rewardText = document.getElementById('battleRewardText');
-            if (result.playerWon && num(result.rewardAmount) > 0) { rewardText.textContent = `+${num(result.rewardAmount)} 魔法金币`; createConfetti(); }
-            else rewardText.textContent = '';
-            modal.classList.remove('hidden'); modal.classList.add('flex');
-        }
-        function closeBattleResultModal() {
-            const modal = document.getElementById('battleResultModal');
-            modal.classList.add('hidden'); modal.classList.remove('flex');
-            const fightButton = document.getElementById('fightButton');
-            fightButton.disabled = false; fightButton.textContent = '战斗吧！';
-            document.getElementById('confettiContainer').innerHTML = '';
-            renderBattleHistory(); updateStatsUI();
-        }
-        async function renderBattleHistory() {
-            const winLossContainer = document.getElementById('winLossRanking');
-            const recentContainer = document.getElementById('recentBattles');
-            winLossContainer.innerHTML = '<p class="text-gray-500">加载中...</p>';
-            recentContainer.innerHTML = '<p class="text-gray-500">加载中...</p>';
-            const [rankings, recent] = await Promise.allSettled([rpc('sw_arena_rankings', {}, false), rpc('sw_arena_recent', {}, false)]);
-            if (rankings.status === 'fulfilled') {
-                const list = rankings.value || [];
-                winLossContainer.innerHTML = list.length === 0 ? '<p class="text-gray-500">暂无排名数据</p>'
-                    : list.map((p, i) => `<div class="flex justify-between items-center text-gray-300"><div><span class="font-bold text-lg mr-2">${i + 1}.</span><span class="text-purple-300">${esc(p.winner_name)}</span></div><div><span class="text-green-400">${num(p.wins)}胜</span></div></div>`).join('');
-            } else winLossContainer.innerHTML = '<p class="text-red-500">加载排名失败</p>';
-            if (recent.status === 'fulfilled') {
-                const list = recent.value || [];
-                recentContainer.innerHTML = list.length === 0 ? '<p class="text-gray-500">暂无对战记录</p>'
-                    : list.map(b => `<div class="text-gray-400 text-sm"><span class="font-bold text-green-400">${esc(b.winner_name)}</span> 击败了 <span class="font-bold text-red-400">${esc(b.loser_name)}</span></div>`).join('');
-            } else recentContainer.innerHTML = '<p class="text-red-500">加载记录失败</p>';
-        }
-        function createConfetti() {
-            const container = document.getElementById('confettiContainer');
-            container.innerHTML = '';
-            const colors = ['#f00', '#0f0', '#00f', '#ff0', '#0ff', '#f0f'];
-            for (let i = 0; i < 100; i++) {
-                const confetti = document.createElement('div');
-                confetti.className = 'confetti';
-                confetti.style.left = Math.random() * 100 + 'vw';
-                confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
-                confetti.style.animationDelay = Math.random() * 3 + 's';
-                container.appendChild(confetti);
-            }
-        }
-    </script>
+        const run = d.run || {}, net = num(run.goldWon) - num(run.goldLost) - num(run.entryFee);
+        $('trialFeedback').innerHTML = d.correct
+            ? `<p class="text-green-400 font-bold mb-3">✓ Correct! +${num(d.goldChange)} gold</p><button onclick="nextTrialQuestion()" class="btn-gold px-8 py-2 rounded">Next Question</button>`
+            : `<p class="text-red-400 font-bold">✗ Not quite! −${Math.abs(num(d.goldChange))} gold. The trial is over.</p>${reveal}
+               <div class="tile p-3 mt-3 text-sm"><p>This trial: <b class="text-green-400">${num(run.correct)}</b> correct · won <b class="gold">${num(run.goldWon)}</b> · entry ${num(run.entryFee)} · penalty ${num(run.goldLost)} → <b class="${net >= 0 ? 'text-green-400' : 'text-red-400'}">${net >= 0 ? '+' + net : '−' + Math.abs(net)} gold</b></p><p class="text-xs text-gray-500 mt-1">This question will come back in a later trial.</p></div>
+               <div class="flex gap-2 mt-3"><button onclick="trialBusy=false;trialQ=null;startTrial()" class="btn-crimson px-6 py-2 rounded">New Trial (−${num((trialStatus.rules || {}).entry)} gold)</button><button onclick="trialBusy=false;trialQ=null;loadTrial()" class="btn-ghost px-6 py-2 rounded">Back</button></div>`;
+        if (!d.correct) { trialQ = null; trialBusy = true; loadTrial(); }
+    } catch (e) { handleError('Could not submit your answer', e); trialBusy = false; trialQ = null; loadTrial(); }
+}
+async function quitTrial() {
+    if (!confirm('End this trial now? You will not lose any more gold, but the entry fee is not refunded.')) return;
+    try { const d = await rpc('sw_hp_quit'); gameState = d.gameState; renderAll(); trialBusy = false; trialQ = null; toast('Trial ended.'); loadTrial(); }
+    catch (e) { handleError('Could not end the trial', e); }
+}
+
+// ===================== 交易所 =====================
+function isMyListing(l) { return String(l.sellerId) === String(gameState.userId); }
+function openListItemModal() {
+    const eq = (gameState.inventory || []).map((it, i) => `<option value="equipment:${i}">[${slotName(it.slot)}] ${esc(it.name)} (ATK ${num(it.attack)} DEF ${num(it.defense)})</option>`);
+    const cards = (gameState.magicCardsInventory || []).map((c, i) => `<option value="card:${i}">[Card] ${esc(c.name)}</option>`);
+    if (!eq.length && !cards.length) return toast('Nothing in your trunk to sell (unequip items first).', 'error');
+    $('listItemSelect').innerHTML = eq.concat(cards).join(''); showModal('listItemModal');
+}
+function closeListItemModal() { hideModal('listItemModal'); $('listItemForm').reset(); }
+async function handleListItemSubmit(e) {
+    e.preventDefault();
+    const [type, idxStr] = $('listItemSelect').value.split(':'), idx = parseInt(idxStr, 10), price = Number($('itemPriceInput').value);
+    if (!Number.isInteger(price) || price <= 0 || price > MAX_PRICE) return toast(`Please enter a whole-number price from 1 to ${MAX_PRICE}.`, 'error');
+    const it = (type === 'card' ? gameState.magicCardsInventory : gameState.inventory)[idx]; if (!it) return;
+    if (!confirm(`List "${it.name}" for ${price} gold?`)) return;
+    const d = await act('sw_exchange_create', { p_item_type: type, p_index: idx, p_item_id: String(it.id), p_price: price }, 'Listing failed');
+    if (d) { toast(`"${it.name}" is now on sale.`); closeListItemModal(); renderExchange(); }
+}
+async function renderExchange() {
+    const c = $('exchangeListings'); c.innerHTML = '<p class="text-gray-400 col-span-full text-center">Loading the market...</p>';
+    try {
+        currentListings = await rpc('sw_exchange_list', {}, false) || [];
+        c.innerHTML = currentListings.length ? currentListings.map(l => `<div class="tile p-4 flex flex-col"><div class="w-full h-32 bg-gray-900 rounded mb-3 flex items-center justify-center overflow-hidden">${imgTag(l.image, l.name, 'w-full h-full object-cover') || `<i class="fas ${l.itemType === 'card' ? 'fa-scroll' : 'fa-hat-wizard'} fa-3x text-red-300"></i>`}</div><h4 class="font-bold truncate">${esc(l.name)}</h4><p class="text-xs text-gray-400 mb-1 truncate">${l.itemType === 'card' ? esc(l.description) : `ATK ${num(l.attack)} · DEF ${num(l.defense)}`}</p><p class="text-xs text-red-300 mb-3">Sold by ${esc(l.sellerCharacterName)}</p><div class="flex justify-between items-center mt-auto"><span class="gold font-bold text-lg">${num(l.price)} <i class="fas fa-coins text-sm"></i></span>${isMyListing(l) ? `<button onclick="deleteListing(${num(l.id)})" class="btn-ghost px-3 py-1 rounded text-xs">Remove</button>` : `<button onclick="purchaseListing(${num(l.id)})" class="btn-crimson px-3 py-1 rounded text-xs">Buy</button>`}</div></div>`).join('')
+            : '<p class="text-gray-400 col-span-full text-center italic">The exchange is empty right now.</p>';
+    } catch (e) { c.innerHTML = `<p class="text-red-500 col-span-full text-center">${esc(e.message)}</p>`; }
+}
+async function purchaseListing(id) { const l = currentListings.find(x => Number(x.id) === Number(id)); if (!confirm(`Buy "${l ? l.name : ''}" for ${l ? num(l.price) : ''} gold?`)) return; const d = await act('sw_exchange_buy', { p_listing_id: id }, 'Purchase failed'); if (d) toast('Purchase complete!'); renderExchange(); }
+async function deleteListing(id) { if (!confirm('Remove this listing? The item will return to your trunk.')) return; const d = await act('sw_exchange_cancel', { p_listing_id: id }, 'Could not remove'); if (d) toast('Listing removed. The item is back in your trunk.'); renderExchange(); }
+
+// ===================== 荣誉殿堂 =====================
+async function renderLeaderboards() {
+    const row = (i, name, val) => `<div class="flex justify-between text-sm ${i < 3 ? 'gold' : 'text-gray-300'}"><span>${i === 0 ? '👑' : i < 3 ? '🏅' : `<span class="inline-block w-5 text-gray-500">${i + 1}</span>`} ${esc(name)}</span><span class="font-bold">${val}</span></div>`;
+    const [c, w, h] = await Promise.allSettled([rpc('sw_leaderboard_combat', {}, false), rpc('sw_leaderboard_wealth', {}, false), rpc('sw_honor_ranking', {}, false)]);
+    $('leaderboard').innerHTML = c.status === 'fulfilled' && c.value.length ? c.value.map((p, i) => row(i, p.name, `${num(p.attack)} ATK`)).join('') : '<p class="text-gray-500 italic">No data yet</p>';
+    $('wealthLeaderboard').innerHTML = w.status === 'fulfilled' && w.value.length ? w.value.map((p, i) => row(i, p.name, `${num(p.gold)} gold`)).join('') : '<p class="text-gray-500 italic">No data yet</p>';
+    $('honorLeaderboard').innerHTML = h.status === 'fulfilled' && h.value.length ? h.value.map((p, i) => row(i, p.name, `${num(p.honor)} honour`)).join('') : '<p class="text-gray-500 italic">No data yet</p>';
+}
+
+// ===================== 角色自定义 =====================
+function openCustomizationModal() { $('customNameInput').value = gameState.characterName || ''; $('customAvatarUrlInput').value = ''; $('customAvatarFileInput').value = ''; showModal('characterCustomizationModal'); }
+function closeCustomizationModal() { hideModal('characterCustomizationModal'); }
+async function saveCustomization() {
+    const name = $('customNameInput').value.trim(), url = $('customAvatarUrlInput').value.trim(), file = $('customAvatarFileInput').files[0];
+    if (name.length > MAX_NAME_LENGTH) return toast(`Character names can be at most ${MAX_NAME_LENGTH} characters.`, 'error');
+    if (!file && url && !/^https?:\/\//i.test(url)) return toast('Avatar links must start with http:// or https://', 'error');
+    try {
+        const avatar = file ? await resizeAvatar(file) : (url || null);
+        const d = await rpc('sw_update_profile', { p_character_name: name || null, p_avatar: avatar });
+        gameState = d.gameState; renderAll(); closeCustomizationModal(); toast('Character updated!');
+    } catch (e) { handleError('Save failed', e); }
+}
+</script>
 </body>
 </html>
