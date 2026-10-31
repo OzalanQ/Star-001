@@ -42,6 +42,7 @@
                 <button class="tab-btn btn bg-gray-600" data-tab="accounts">创建账号</button>
                 <button class="tab-btn btn bg-gray-600" data-tab="cards">卡牌兑现</button>
                 <button class="tab-btn btn bg-gray-600" data-tab="shop">商店管理</button>
+                <button class="tab-btn btn bg-gray-600" data-tab="data">数据管理</button>
             </div>
             <div class="flex items-center gap-3 text-sm">
                 <label class="flex items-center gap-2"><input id="regToggle" type="checkbox" onchange="toggleRegistration()"> 允许学生自己注册</label>
@@ -222,6 +223,35 @@
                 </div>
             </div>
         </section>
+        <section id="tab-data" class="hidden space-y-6">
+            <div class="panel p-5">
+                <h2 class="text-xl font-bold text-yellow-300 mb-3"><i class="fas fa-database mr-2"></i>空间使用</h2>
+                <div class="w-full bg-gray-700 rounded-full h-4 overflow-hidden"><div id="dbBar" class="h-4 bg-green-500" style="width:0%"></div></div>
+                <p id="dbText" class="text-sm text-gray-300 mt-2">加载中...</p>
+                <p id="photoText" class="text-sm text-gray-400 mt-1"></p>
+            </div>
+            <div class="panel p-5">
+                <h2 class="text-xl font-bold text-pink-300 mb-1"><i class="fas fa-images mr-2"></i>清理旧作业照片</h2>
+                <p class="text-sm text-gray-400 mb-4">只删除照片，作业的文字、评分、评语和金币记录全部保留。<b class="text-gray-200">待批改的作业永远不会被清理。</b>建议先点①把照片下载存档，再点②清理。</p>
+                <label class="text-sm text-gray-300">清理范围
+                    <select id="purgeDays" class="field mt-1" onchange="updatePurgeInfo()"></select>
+                </label>
+                <div class="flex flex-wrap gap-2 mt-4">
+                    <button id="btnArchive" onclick="archivePhotos()" class="btn bg-blue-600 hover:bg-blue-700"><i class="fas fa-download mr-1"></i>① 下载这些照片存档</button>
+                    <button id="btnPurge" onclick="purgePhotos()" class="btn bg-red-700 hover:bg-red-800"><i class="fas fa-broom mr-1"></i>② 清理这些照片</button>
+                </div>
+                <p id="purgeMsg" class="text-sm mt-3"></p>
+            </div>
+            <div class="panel p-5">
+                <h2 class="text-xl font-bold text-green-300 mb-1"><i class="fas fa-save mr-2"></i>数据备份</h2>
+                <p class="text-sm text-gray-400 mb-4">免费版 Supabase 没有自动备份，建议每月（或期中、期末）下载一次，保存在电脑或网盘里。备份不含作业照片和学生密码。</p>
+                <div class="flex flex-wrap gap-2">
+                    <button onclick="exportBackup()" class="btn bg-green-600 hover:bg-green-700"><i class="fas fa-file-code mr-1"></i>下载完整备份（JSON）</button>
+                    <button onclick="exportCsv()" class="btn bg-gray-600 hover:bg-gray-700"><i class="fas fa-file-excel mr-1"></i>下载学生成绩表（Excel 可打开）</button>
+                </div>
+                <p id="backupMsg" class="text-sm text-gray-400 mt-3"></p>
+            </div>
+        </section>
     </div>
 </div>
 
@@ -303,13 +333,14 @@
     document.querySelectorAll('.tab-btn').forEach(btn => btn.addEventListener('click', () => {
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
-        ['students', 'tasks', 'houses', 'riddles', 'accounts', 'cards', 'shop'].forEach(t => document.getElementById('tab-' + t).classList.toggle('hidden', t !== btn.dataset.tab));
+        ['students', 'tasks', 'houses', 'riddles', 'accounts', 'cards', 'shop', 'data'].forEach(t => document.getElementById('tab-' + t).classList.toggle('hidden', t !== btn.dataset.tab));
         if (btn.dataset.tab === 'students') loadPlayers();
         if (btn.dataset.tab === 'cards') loadCardUsages();
         if (btn.dataset.tab === 'tasks') { loadTasks(); loadSubmissions(); }
         if (btn.dataset.tab === 'houses') loadHouseCup();
         if (btn.dataset.tab === 'riddles') loadRiddles();
         if (btn.dataset.tab === 'shop') loadProducts();
+        if (btn.dataset.tab === 'data') loadDataTab();
     }));
 
     async function toggleRegistration() {
@@ -344,6 +375,88 @@
         if (typed.trim().toLowerCase() !== username.toLowerCase()) return alert('输入的账号名不一致，已取消删除。');
         try { const r = await rpc('sw_admin_delete_player', { p_username: username, p_confirm: typed }); alert(`已删除账号 ${r.username}（${r.characterName}）`); loadPlayers(); }
         catch (e) { alert(`删除失败：${e.message}`); }
+    }
+
+    // ---------- 数据管理：照片清理 + 备份 ----------
+    let photoStats = null;
+    const MB = b => (num(b) / 1048576).toFixed(1);
+    function today() { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; }
+    function downloadFile(name, content, type) {
+        const url = URL.createObjectURL(new Blob([content], { type }));
+        const a = document.createElement('a'); a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 5000);
+    }
+    async function loadDataTab() {
+        try {
+            const s = photoStats = await rpc('sw_admin_photo_stats');
+            const pct = Math.min(100, num(s.dbBytes) / num(s.limit) * 100);
+            const bar = document.getElementById('dbBar'); bar.style.width = pct.toFixed(1) + '%';
+            bar.className = 'h-4 ' + (pct > 80 ? 'bg-red-500' : pct > 60 ? 'bg-yellow-500' : 'bg-green-500');
+            document.getElementById('dbText').textContent = `数据库已用 ${MB(s.dbBytes)} MB / 500 MB（${pct.toFixed(0)}%）${pct > 80 ? ' —— 空间快满了，建议清理旧照片' : ''}`;
+            document.getElementById('photoText').textContent = `其中作业照片：${num(s.all.photos)} 张，约 ${MB(s.all.bytes)} MB（待批改的 ${num(s.pending.photos)} 张不会被清理）`;
+            const label = { 0: '所有已批改的作业', 7: '批改超过 7 天的作业', 30: '批改超过 30 天的作业', 60: '批改超过 60 天的作业', 90: '批改超过 90 天的作业' };
+            const sel = document.getElementById('purgeDays'), cur = sel.value || '30';
+            sel.innerHTML = s.buckets.map(b => `<option value="${num(b.days)}">${label[b.days] || b.days + ' 天'}：${num(b.submissions)} 份作业，${num(b.photos)} 张照片，约 ${MB(b.bytes)} MB</option>`).join('');
+            sel.value = cur; updatePurgeInfo();
+        } catch (e) { document.getElementById('dbText').textContent = e.message; }
+        try { const last = localStorage.getItem('sw_last_backup'); document.getElementById('backupMsg').textContent = last ? `上次在这台电脑下载备份：${last}` : '这台电脑上还没有下载过备份。'; } catch (e) { }
+    }
+    function currentBucket() { const d = num(document.getElementById('purgeDays').value); return (photoStats && photoStats.buckets.find(b => num(b.days) === d)) || { photos: 0 }; }
+    function updatePurgeInfo() {
+        const none = !num(currentBucket().photos);
+        document.getElementById('btnArchive').disabled = none; document.getElementById('btnPurge').disabled = none;
+        if (none) document.getElementById('purgeMsg').innerHTML = '<span class="text-gray-500">这个范围内没有需要清理的照片。</span>';
+        else document.getElementById('purgeMsg').textContent = '';
+    }
+    async function archivePhotos() {
+        const days = num(document.getElementById('purgeDays').value), msg = document.getElementById('purgeMsg'), btn = document.getElementById('btnArchive');
+        btn.disabled = true;
+        try {
+            const list = await rpc('sw_admin_photo_targets', { p_days: days }) || [];
+            if (!list.length) { msg.textContent = '没有需要存档的照片。'; return; }
+            const parts = []; let lastTask = null, done = 0;
+            for (const s of list) {
+                msg.innerHTML = `<span class="text-blue-300">正在打包照片 ${++done} / ${list.length} 份作业...请不要关闭页面</span>`;
+                const imgs = (await rpc('sw_admin_submission_images', { p_submission_id: s.id }) || []).map(safeImg).filter(Boolean);
+                const taskKey = s.taskTitle + '|' + (s.taskType === 'daily' ? s.period : '');
+                if (taskKey !== lastTask) { parts.push(`<h2>${esc(s.taskTitle)}${s.taskType === 'daily' ? ` <small>${esc(s.period)}</small>` : ''}</h2>`); lastTask = taskKey; }
+                parts.push(`<div class="sub"><p><b>${esc(s.characterName)}</b> <span class="u">${esc(s.username)}</span> · ${s.status === 'approved' ? '✅ 通过' : '❌ 未通过'}${num(s.goldChange) ? ` · 金币 ${s.goldChange > 0 ? '+' : ''}${num(s.goldChange)}` : ''} · 提交于 ${esc(fmtTime(s.submittedAt))}</p>${s.text ? `<p class="t">${esc(s.text)}</p>` : ''}${s.comment ? `<p class="c">老师评语：${esc(s.comment)}</p>` : ''}<div>${imgs.map(u => `<a href="${esc(u)}" target="_blank"><img src="${esc(u)}"></a>`).join('')}</div></div>`);
+            }
+            const html = `<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><title>Starwarts 作业照片存档 ${today()}</title><style>body{font-family:sans-serif;max-width:1000px;margin:20px auto;padding:0 16px;color:#222}h1{font-size:22px}h2{margin-top:32px;border-bottom:2px solid #c9a227;padding-bottom:4px}small{color:#888;font-weight:normal}.sub{border:1px solid #ddd;border-radius:8px;padding:10px 14px;margin:10px 0}.u{color:#888;font-family:monospace}.t{white-space:pre-wrap}.c{color:#8a6d00}img{height:180px;margin:4px;border-radius:6px;border:1px solid #ccc}</style></head><body><h1>Starwarts 作业照片存档</h1><p>导出时间：${esc(new Date().toLocaleString())} · 共 ${list.length} 份作业。点击照片可以查看原图。</p>${parts.join('\n')}</body></html>`;
+            downloadFile(`Starwarts作业照片存档_${today()}.html`, html, 'text/html;charset=utf-8');
+            msg.innerHTML = `<span class="text-green-400">✓ 已下载存档文件（${list.length} 份作业）。用浏览器打开就能看。确认文件保存好以后，再点②清理。</span>`;
+        } catch (e) { msg.innerHTML = `<span class="text-red-400">打包失败：${esc(e.message)}</span>`; }
+        finally { btn.disabled = false; }
+    }
+    async function purgePhotos() {
+        const days = num(document.getElementById('purgeDays').value), b = currentBucket(), msg = document.getElementById('purgeMsg');
+        if (!confirm(`确定清理 ${num(b.submissions)} 份作业中的 ${num(b.photos)} 张照片吗（约 ${MB(b.bytes)} MB）？\n\n照片删除后无法恢复，作业文字、评分和评语会保留。\n如果还没下载存档，请先点"取消"，再点①下载。`)) return;
+        try {
+            const r = await rpc('sw_admin_purge_photos', { p_days: days });
+            msg.innerHTML = `<span class="text-green-400">✓ 已清理 ${num(r.photos)} 张照片，腾出约 ${MB(r.bytes)} MB。</span><br><span class="text-gray-400 text-xs">腾出的空间会马上留给新照片使用。Supabase 后台显示的"Database size"数字不一定立刻变小；想让它变小，可以在 Supabase 的 SQL Editor 里运行一行：<code class="text-yellow-300">vacuum full sw.submissions;</code></span>`;
+            const keep = msg.innerHTML; await loadDataTab(); msg.innerHTML = keep;
+        } catch (e) { msg.innerHTML = `<span class="text-red-400">清理失败：${esc(e.message)}</span>`; }
+    }
+    function markBackup() { try { localStorage.setItem('sw_last_backup', new Date().toLocaleString()); } catch (e) { } }
+    async function exportBackup() {
+        const msg = document.getElementById('backupMsg'); msg.textContent = '正在导出...';
+        try {
+            const data = await rpc('sw_admin_export');
+            downloadFile(`Starwarts备份_${today()}.json`, JSON.stringify(data, null, 1), 'application/json');
+            markBackup(); msg.innerHTML = `<span class="text-green-400">✓ 已下载完整备份（${num(data.summary.length)} 名学生）。请把文件保存到电脑或网盘。</span>`;
+        } catch (e) { msg.innerHTML = `<span class="text-red-400">导出失败：${esc(e.message)}</span>`; }
+    }
+    async function exportCsv() {
+        const msg = document.getElementById('backupMsg'); msg.textContent = '正在导出...';
+        try {
+            const data = await rpc('sw_admin_export');
+            const house = { gryffindor: '格兰芬多', slytherin: '斯莱特林', ravenclaw: '拉文克劳', hufflepuff: '赫奇帕奇' };
+            const cell = v => { let x = String(v ?? ''); if (/^[=+\-@]/.test(x)) x = "'" + x; return /[",\n]/.test(x) ? `"${x.replace(/"/g, '""')}"` : x; };
+            const rows = [['账号', '角色名', '学院', '金币', '荣誉点', '攻击', '防御', '哈利波特题已掌握', '作业通过数', '谜语答对数', '注册时间']]
+                .concat(data.summary.map(p => [p.username, p.characterName, house[p.house] || '未分院', p.gold, p.honor, p.attack, p.defense, p.hpMastered, p.tasksApproved, p.riddlesCorrect, new Date(p.createdAt).toLocaleDateString()]));
+            downloadFile(`Starwarts学生成绩表_${today()}.csv`, '﻿' + rows.map(r => r.map(cell).join(',')).join('\r\n'), 'text/csv;charset=utf-8');
+            msg.innerHTML = `<span class="text-green-400">✓ 已下载学生成绩表（${num(data.summary.length)} 名学生），可以用 Excel 或 WPS 打开。</span>`;
+        } catch (e) { msg.innerHTML = `<span class="text-red-400">导出失败：${esc(e.message)}</span>`; }
     }
 
     // ---------- 发放 / 扣除金币 ----------
@@ -546,7 +659,7 @@
                     <div class="flex flex-wrap justify-between gap-2 mb-2"><div class="flex items-center gap-2">${typeBadge(s.taskType)}<span class="font-bold">${esc(s.taskTitle)}</span>${s.taskType === 'daily' ? `<span class="text-xs text-gray-400">${esc(s.period)}</span>` : ''}</div><div class="text-sm">${statusTag} <span class="text-gray-400 text-xs ml-2">${fmtTime(s.submittedAt)}</span></div></div>
                     <p class="mb-2"><span class="text-pink-300 font-bold">${esc(s.characterName)}</span> <span class="text-xs text-gray-500 font-mono">${esc(s.username)}</span></p>
                     ${s.text ? `<p class="text-gray-200 whitespace-pre-wrap text-sm mb-2">${esc(s.text)}</p>` : ''}
-                    <div class="flex flex-wrap gap-2 mb-2" id="imgs-${num(s.id)}">${num(s.imageCount) ? `<span class="text-xs text-gray-500">正在加载 ${num(s.imageCount)} 张照片...</span>` : ''}</div>
+                    <div class="flex flex-wrap gap-2 mb-2" id="imgs-${num(s.id)}">${num(s.imageCount) ? `<span class="text-xs text-gray-500">正在加载 ${num(s.imageCount)} 张照片...</span>` : s.photosRemoved ? '<span class="text-xs text-gray-500"><i class="fas fa-broom mr-1"></i>照片已清理（文字和评分保留）</span>' : ''}</div>
                     ${done ? `<p class="text-sm text-gray-400">${num(s.goldChange) ? `金币 ${s.goldChange > 0 ? '+' : ''}${num(s.goldChange)}　` : ''}${s.comment ? `评语：${esc(s.comment)}` : ''}</p>` : `
                     <div class="flex flex-wrap items-end gap-2 mt-3 border-t border-gray-700 pt-3">
                         <label class="text-xs text-gray-400">金币<input id="gold-${num(s.id)}" type="number" step="1" value="${num(s.rewardGold)}" class="field mt-1" style="width:6rem"></label>
