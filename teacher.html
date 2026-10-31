@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex">
+    <title>Starwarts 教师管理台</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+    <style>
+        body { background: linear-gradient(135deg,#0c0c2e 0%,#1a1a4e 50%,#2d1b69 100%); min-height: 100vh; color: #e5e7eb; }
+        .panel { background: rgba(30,30,80,.9); border: 1px solid rgba(147,51,234,.4); border-radius: 12px; }
+        .field { width: 100%; padding: .5rem .75rem; background: #1f2937; color: #fff; border: 1px solid #8b5cf6; border-radius: .375rem; }
+        .btn { padding: .5rem 1rem; border-radius: .375rem; color: #fff; font-weight: 600; }
+        .btn:disabled { opacity: .5; cursor: not-allowed; }
+        table td, table th { padding: .35rem .5rem; }
+        .tab-btn.active { background: #db2777; }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+<div class="max-w-6xl mx-auto space-y-6">
+    <div class="text-center">
+        <h1 class="text-3xl font-bold text-purple-300"><i class="fas fa-chalkboard-teacher mr-2"></i>Starwarts 教师管理台</h1>
+        <p class="text-gray-400 mt-1 text-sm">用老师账号登录。只有被设为老师（is_admin）的账号才能使用这里的功能。</p>
+    </div>
+
+    <!-- 登录 -->
+    <div id="loginPanel" class="panel p-6 max-w-sm mx-auto space-y-3">
+        <input id="tUser" class="field" placeholder="老师账号" autocomplete="username">
+        <input id="tPass" type="password" class="field" placeholder="密码" autocomplete="current-password">
+        <button onclick="teacherLogin()" class="btn bg-purple-600 hover:bg-purple-700 w-full">登录</button>
+        <p id="loginMsg" class="text-red-400 text-sm"></p>
+    </div>
+
+    <div id="mainPanel" class="hidden space-y-6">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+            <div class="flex flex-wrap gap-2">
+                <button class="tab-btn btn bg-gray-600 active" data-tab="students">学生与金币</button>
+                <button class="tab-btn btn bg-gray-600" data-tab="tasks">任务与作业 <span id="pendingBadge" class="hidden bg-red-500 text-white text-xs rounded-full px-2 ml-1"></span></button>
+                <button class="tab-btn btn bg-gray-600" data-tab="houses">学院杯</button>
+                <button class="tab-btn btn bg-gray-600" data-tab="riddles">谜语题库</button>
+                <button class="tab-btn btn bg-gray-600" data-tab="accounts">创建账号</button>
+                <button class="tab-btn btn bg-gray-600" data-tab="cards">卡牌兑现</button>
+                <button class="tab-btn btn bg-gray-600" data-tab="shop">商店管理</button>
+            </div>
+            <div class="flex items-center gap-3 text-sm">
+                <label class="flex items-center gap-2"><input id="regToggle" type="checkbox" onchange="toggleRegistration()"> 允许学生自己注册</label>
+                <span id="whoami" class="text-gray-400"></span>
+                <button onclick="teacherLogout()" class="btn bg-gray-700 hover:bg-gray-800 text-sm">退出</button>
+            </div>
+        </div>
+
+        <!-- 学生与金币 -->
+        <section id="tab-students" class="space-y-6">
+            <div class="panel p-5">
+                <h2 class="text-xl font-bold text-yellow-300 mb-2"><i class="fas fa-coins mr-2"></i>发放 / 扣除金币</h2>
+                <p class="text-sm text-gray-400 mb-3">每行一位同学：<code class="text-pink-300">账号 金币数</code>，扣除写负数（如 <code class="text-pink-300">zhangsan -10</code>，最多扣到 0）。可以一次粘贴全班。</p>
+                <textarea id="goldList" rows="5" class="field font-mono" placeholder="zhangsan 20&#10;lisi 15&#10;wangwu -10"></textarea>
+                <div class="flex flex-wrap items-center gap-3 mt-3">
+                    <input id="goldReason" class="field" style="max-width:280px" placeholder="原因（可选），如：课堂表现" maxlength="50">
+                    <button id="grantBtn" onclick="grantGold()" class="btn bg-yellow-600 hover:bg-yellow-700">执行</button>
+                    <span id="grantSummary" class="text-sm text-gray-300"></span>
+                </div>
+                <div id="grantResults" class="mt-3 space-y-1 text-sm max-h-60 overflow-y-auto"></div>
+            </div>
+            <div class="panel p-5">
+                <div class="flex justify-between items-center mb-3">
+                    <h2 class="text-xl font-bold text-purple-300"><i class="fas fa-users mr-2"></i>学生列表</h2>
+                    <button onclick="loadPlayers()" class="btn bg-gray-600 hover:bg-gray-700 text-sm"><i class="fas fa-sync-alt mr-1"></i>刷新</button>
+                </div>
+                <div class="overflow-x-auto"><table class="w-full text-sm">
+                    <thead class="text-gray-400 text-left"><tr><th>账号</th><th>角色名</th><th>学院</th><th>金币</th><th>荣誉点</th><th>攻/防</th><th></th></tr></thead>
+                    <tbody id="playerRows"></tbody>
+                </table></div>
+            </div>
+        </section>
+
+        <!-- 任务与作业 -->
+        <section id="tab-tasks" class="hidden space-y-6">
+            <div class="panel p-5">
+                <div class="flex flex-wrap justify-between items-center gap-3 mb-3">
+                    <h2 class="text-xl font-bold text-yellow-300"><i class="fas fa-clipboard-check mr-2"></i>批改作业</h2>
+                    <div class="flex items-center gap-2 text-sm">
+                        <select id="subFilter" class="field" style="width:auto" onchange="loadSubmissions()">
+                            <option value="pending">待批改</option><option value="approved">已通过</option><option value="rejected">未通过</option><option value="all">全部</option>
+                        </select>
+                        <select id="subTaskFilter" class="field" style="width:auto;max-width:14rem" onchange="loadSubmissions()"><option value="">所有任务</option></select>
+                        <button onclick="loadSubmissions()" class="btn bg-gray-600 hover:bg-gray-700 text-sm"><i class="fas fa-sync-alt"></i></button>
+                    </div>
+                </div>
+                <p class="text-xs text-gray-500 mb-3">通过时默认奖励任务设定的金币，可以改；不通过时可以填负数扣金币（最多扣到 0）。学生会在任务里看到结果和评语，不通过的可以重新提交。已批改超过 30 天的照片会自动删除以节省空间（文字和结果保留）。</p>
+                <div id="submissionList" class="space-y-4"></div>
+            </div>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="panel p-5">
+                    <h2 class="text-xl font-bold text-green-300 mb-3"><i class="fas fa-bullhorn mr-2"></i>发布任务</h2>
+                    <form id="taskForm" class="space-y-3">
+                        <select id="tkType" class="field">
+                            <option value="daily">每日任务（每个学生每天可提交一次）</option>
+                            <option value="honor">荣誉作业（每个学生提交一次）</option>
+                            <option value="bounty">赏金任务（每个学生提交一次）</option>
+                        </select>
+                        <input id="tkTitle" class="field" placeholder="任务标题，例如：每日阅读打卡" maxlength="50" required>
+                        <textarea id="tkContent" rows="4" class="field" placeholder="任务说明（要做什么、怎么提交）" maxlength="3000"></textarea>
+                        <label class="block text-xs text-gray-400">配一张图片（可选）<input id="tkFile" type="file" accept="image/*" class="block mt-1 text-gray-300"></label>
+                        <div class="grid grid-cols-2 gap-2">
+                            <label class="text-xs text-gray-400">建议奖励金币<input id="tkReward" type="number" min="0" step="1" value="10" class="field mt-1"></label>
+                            <label class="text-xs text-gray-400">截止时间（可不填）<input id="tkDeadline" type="datetime-local" class="field mt-1"></label>
+                        </div>
+                        <button type="submit" id="tkSubmit" class="btn bg-green-600 hover:bg-green-700 w-full">发布</button>
+                    </form>
+                </div>
+                <div class="panel p-5">
+                    <div class="flex justify-between items-center mb-3">
+                        <h2 class="text-xl font-bold text-purple-300"><i class="fas fa-tasks mr-2"></i>进行中的任务</h2>
+                        <span id="dbUsage" class="text-xs text-gray-500"></span>
+                    </div>
+                    <div id="taskList" class="space-y-2"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 学院杯 -->
+        <section id="tab-houses" class="hidden space-y-6">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="panel p-5">
+                    <div class="flex justify-between items-center mb-3"><h2 class="text-xl font-bold text-yellow-300"><i class="fas fa-crown mr-2"></i>学院杯排名</h2><button onclick="loadHouseCup()" class="btn bg-gray-600 hover:bg-gray-700 text-sm"><i class="fas fa-sync-alt"></i></button></div>
+                    <p class="text-xs text-gray-500 mb-3">学院总分 = 成员荣誉点之和 + 老师加的学院分。学生在"学生与金币"页可以单独调整学院。</p>
+                    <div id="houseCupList" class="space-y-3"></div>
+                </div>
+                <div class="panel p-5">
+                    <h2 class="text-xl font-bold text-green-300 mb-3"><i class="fas fa-plus-circle mr-2"></i>加减学院分</h2>
+                    <div class="space-y-3">
+                        <select id="hpHouse" class="field"><option value="gryffindor">🦁 格兰芬多</option><option value="slytherin">🐍 斯莱特林</option><option value="ravenclaw">🦅 拉文克劳</option><option value="hufflepuff">🦡 赫奇帕奇</option></select>
+                        <input id="hpAmount" type="number" step="1" class="field" placeholder="分数，扣分填负数，例如 10 或 -5">
+                        <input id="hpReason" class="field" maxlength="50" placeholder="原因（可选），例如：小组合作优秀">
+                        <button onclick="addHousePoints()" class="btn bg-green-600 hover:bg-green-700 w-full">确定</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 谜语题库 -->
+        <section id="tab-riddles" class="hidden space-y-6">
+            <div class="panel p-5">
+                <h2 class="text-xl font-bold text-green-300 mb-2"><i class="fas fa-book-open mr-2"></i>批量添加题目</h2>
+                <p class="text-sm text-gray-400 mb-3">每行一道题，用竖线 <code class="text-pink-300">|</code> 隔开：<code class="text-pink-300">题目 | 选项A | 选项B | 选项C | 选项D | 正确答案字母 | 荣誉点</code><br>选项可以 2-4 个；荣誉点可以不写（默认 5）。每道题每个学生只能答一次，答对得荣誉点，答错不扣分。</p>
+                <textarea id="riddleInput" rows="6" class="field font-mono" placeholder="3 × 4 = ? | 7 | 12 | 34 | 1 | B&#10;中国的首都是哪里？ | 上海 | 北京 | 广州 | 深圳 | B | 3&#10;水的化学式是？ | H2O | CO2 | A"></textarea>
+                <button id="riddleAddBtn" onclick="addRiddles()" class="btn bg-green-600 hover:bg-green-700 mt-3">添加</button>
+                <div id="riddleAddResults" class="mt-3 text-sm space-y-1"></div>
+            </div>
+            <div class="panel p-5">
+                <div class="flex justify-between items-center mb-3"><h2 class="text-xl font-bold text-purple-300"><i class="fas fa-list mr-2"></i>题库</h2><button onclick="loadRiddles()" class="btn bg-gray-600 hover:bg-gray-700 text-sm"><i class="fas fa-sync-alt"></i></button></div>
+                <div id="riddleList" class="space-y-2"></div>
+            </div>
+        </section>
+
+        <!-- 创建账号 -->
+        <section id="tab-accounts" class="hidden">
+            <div class="panel p-5">
+                <h2 class="text-xl font-bold text-green-300 mb-2"><i class="fas fa-user-plus mr-2"></i>批量创建学生账号</h2>
+                <p class="text-sm text-gray-400 mb-3">每行一个：<code class="text-pink-300">账号 密码 角色名</code>（角色名可省略）。账号只能用英文字母、数字、下划线（3-20 位），密码至少 6 位。<br>只写账号不写密码时，会自动生成 6 位数字密码。</p>
+                <textarea id="accountList" rows="8" class="field font-mono" placeholder="stu01 123456 小明&#10;stu02 654321 小红&#10;stu03"></textarea>
+                <button id="createBtn" onclick="createAccounts()" class="btn bg-green-600 hover:bg-green-700 mt-3">创建</button>
+                <div id="createResults" class="mt-4 text-sm"></div>
+            </div>
+        </section>
+
+        <!-- 卡牌兑现 -->
+        <section id="tab-cards" class="hidden">
+            <div class="panel p-5">
+                <div class="flex justify-between items-center mb-3">
+                    <h2 class="text-xl font-bold text-blue-300"><i class="fas fa-magic mr-2"></i>学生使用卡牌记录</h2>
+                    <button onclick="loadCardUsages()" class="btn bg-gray-600 hover:bg-gray-700 text-sm"><i class="fas fa-sync-alt mr-1"></i>刷新</button>
+                </div>
+                <div class="overflow-x-auto"><table class="w-full text-sm">
+                    <thead class="text-gray-400 text-left"><tr><th>时间</th><th>学生</th><th>卡牌</th><th>效果</th><th>状态</th></tr></thead>
+                    <tbody id="cardRows"></tbody>
+                </table></div>
+            </div>
+        </section>
+
+        <!-- 商店管理 -->
+        <section id="tab-shop" class="hidden space-y-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="panel p-5">
+                    <h2 class="text-xl font-bold text-green-300 mb-3"><i class="fas fa-hat-wizard mr-2"></i>添加装备</h2>
+                    <form id="equipForm" class="space-y-3">
+                        <input id="eqName" class="field" placeholder="装备名称" maxlength="30" required>
+                        <select id="eqSlot" class="field"><option value="wand">栏位：魔杖</option><option value="robe">栏位：长袍</option><option value="hat">栏位：帽子</option><option value="accessory">栏位：饰品</option></select>
+                        <input id="eqImage" class="field" placeholder="图片网址（可选，http/https 开头）">
+                        <label class="block text-xs text-gray-400">或上传图片（会自动缩小）<input id="eqFile" type="file" accept="image/*" class="block mt-1 text-gray-300"></label>
+                        <div class="grid grid-cols-3 gap-2">
+                            <input id="eqPrice" type="number" min="0" step="1" class="field" placeholder="价格" required>
+                            <input id="eqAttack" type="number" min="0" step="1" class="field" placeholder="攻击力" required>
+                            <input id="eqDefense" type="number" min="0" step="1" class="field" placeholder="防御力" required>
+                        </div>
+                        <button type="submit" class="btn bg-green-600 hover:bg-green-700 w-full">添加到商店</button>
+                    </form>
+                </div>
+                <div class="panel p-5">
+                    <h2 class="text-xl font-bold text-blue-300 mb-3"><i class="fas fa-scroll mr-2"></i>添加卡牌</h2>
+                    <form id="cardForm" class="space-y-3">
+                        <input id="cdName" class="field" placeholder="卡牌名称" maxlength="30" required>
+                        <input id="cdImage" class="field" placeholder="图片网址（可选，http/https 开头）">
+                        <label class="block text-xs text-gray-400">或上传图片（会自动缩小）<input id="cdFile" type="file" accept="image/*" class="block mt-1 text-gray-300"></label>
+                        <input id="cdPrice" type="number" min="0" step="1" class="field" placeholder="价格" required>
+                        <textarea id="cdDesc" rows="2" class="field" placeholder="卡牌效果，例如：免一次家庭作业" maxlength="200" required></textarea>
+                        <button type="submit" class="btn bg-blue-600 hover:bg-blue-700 w-full">添加到商店</button>
+                    </form>
+                </div>
+            </div>
+            <div class="panel p-5">
+                <div class="flex justify-between items-center mb-3">
+                    <h2 class="text-xl font-bold text-purple-300"><i class="fas fa-store mr-2"></i>商店商品</h2>
+                    <button onclick="loadProducts()" class="btn bg-gray-600 hover:bg-gray-700 text-sm"><i class="fas fa-sync-alt mr-1"></i>刷新</button>
+                </div>
+                <p class="text-xs text-gray-500 mb-3">下架后学生商店里看不到，但已经买到的学生不受影响。</p>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div><h3 class="font-bold text-green-300 mb-2">装备</h3><div id="equipList" class="space-y-2"></div></div>
+                    <div><h3 class="font-bold text-blue-300 mb-2">卡牌</h3><div id="cardList" class="space-y-2"></div></div>
+                </div>
+            </div>
+        </section>
+    </div>
+</div>
+
+<div id="bigViewer" onclick="this.style.display='none'" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:60;align-items:center;justify-content:center;padding:1rem"><img id="bigViewerImg" alt="大图" style="max-width:95vw;max-height:92vh;border-radius:8px"></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+    // ===== 配置：和学生页面填一样的两个值 =====
+    const SUPABASE_URL = 'https://rxnaklyaiquqlmjymzkk.supabase.co';
+    const SUPABASE_KEY = 'sb_publishable_nb620Ckj_sCfdA_lE0yITg_3OSo6WQk';
+
+    const TOKEN_KEY = 'starwartsTeacherToken';   // 存在 sessionStorage，关掉标签页即退出
+    const configReady = !SUPABASE_URL.includes('你的项目') && !SUPABASE_KEY.includes('你的');
+    const sb = (configReady && window.supabase) ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: false } }) : null;
+
+    function esc(value) { return String(value ?? '').replace(/[&<>"'`]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;', '`': '&#96;' }[c])); }
+    function num(v) { const n = Number(v); return Number.isFinite(n) ? n : 0; }
+    async function rpc(fn, params = {}, needLogin = true) {
+        if (!sb) throw new Error('还没有配置 Supabase 地址和密钥（见本页源代码的配置区）');
+        if (needLogin) params = { p_token: sessionStorage.getItem(TOKEN_KEY) || '', ...params };
+        const { data, error } = await sb.rpc(fn, params);
+        if (error) {
+            if (/登录已过期/.test(error.message || '')) { sessionStorage.removeItem(TOKEN_KEY); showLogin('登录已过期，请重新登录'); }
+            if (error.code === 'PGRST202' || /Could not find the function/.test(error.message || '')) throw new Error('数据库需要更新：请在 Supabase 的 SQL Editor 里重新运行最新的 supabase_setup.sql');
+            throw new Error(error.message || '请求失败');
+        }
+        return data;
+    }
+    function resizeImage(file, size = 128) {
+        return new Promise((resolve, reject) => {
+            if (!file.type.startsWith('image/')) return reject(new Error('请选择图片文件'));
+            const reader = new FileReader();
+            reader.onerror = () => reject(new Error('读取图片失败'));
+            reader.onload = () => {
+                const img = new Image();
+                img.onerror = () => reject(new Error('无法识别这张图片'));
+                img.onload = () => {
+                    const c = document.createElement('canvas'); c.width = size; c.height = size;
+                    const s = Math.max(size / img.width, size / img.height), w = img.width * s, h = img.height * s;
+                    c.getContext('2d').drawImage(img, (size - w) / 2, (size - h) / 2, w, h);
+                    resolve(c.toDataURL('image/jpeg', 0.85));
+                };
+                img.src = reader.result;
+            };
+            reader.readAsDataURL(file);
+        });
+    }
+
+    // ---------- 登录 ----------
+    function showLogin(msg) {
+        document.getElementById('loginPanel').classList.remove('hidden');
+        document.getElementById('mainPanel').classList.add('hidden');
+        document.getElementById('loginMsg').textContent = msg || '';
+    }
+    async function teacherLogin() {
+        const msg = document.getElementById('loginMsg'); msg.textContent = '';
+        try {
+            const r = await rpc('sw_login', { p_username: document.getElementById('tUser').value.trim(), p_password: document.getElementById('tPass').value }, false);
+            if (!r || !r.ok) { msg.textContent = (r && r.message) || '登录失败'; return; }
+            if (!r.gameState.isAdmin) {
+                sessionStorage.setItem(TOKEN_KEY, r.token); rpc('sw_logout').catch(() => { }); sessionStorage.removeItem(TOKEN_KEY);
+                msg.textContent = '这个账号还不是老师账号。请先在 Supabase 的 SQL Editor 里把它设为老师（见使用说明）。'; return;
+            }
+            sessionStorage.setItem(TOKEN_KEY, r.token);
+            enterMain(r.gameState);
+        } catch (e) { msg.textContent = e.message; }
+    }
+    async function teacherLogout() { try { await rpc('sw_logout'); } catch (e) { } sessionStorage.removeItem(TOKEN_KEY); showLogin(''); }
+    function enterMain(state) {
+        document.getElementById('loginPanel').classList.add('hidden');
+        document.getElementById('mainPanel').classList.remove('hidden');
+        document.getElementById('whoami').textContent = `当前：${state.characterName}（${state.username}）`;
+        rpc('sw_public_settings', {}, false).then(s => { document.getElementById('regToggle').checked = !!(s && s.registrationOpen); }).catch(() => { });
+        loadPlayers();
+        loadTasks();
+    }
+    document.getElementById('tPass').addEventListener('keypress', e => { if (e.key === 'Enter') teacherLogin(); });
+
+    // ---------- 标签页 ----------
+    document.querySelectorAll('.tab-btn').forEach(btn => btn.addEventListener('click', () => {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        ['students', 'tasks', 'houses', 'riddles', 'accounts', 'cards', 'shop'].forEach(t => document.getElementById('tab-' + t).classList.toggle('hidden', t !== btn.dataset.tab));
+        if (btn.dataset.tab === 'students') loadPlayers();
+        if (btn.dataset.tab === 'cards') loadCardUsages();
+        if (btn.dataset.tab === 'tasks') { loadTasks(); loadSubmissions(); }
+        if (btn.dataset.tab === 'houses') loadHouseCup();
+        if (btn.dataset.tab === 'riddles') loadRiddles();
+        if (btn.dataset.tab === 'shop') loadProducts();
+    }));
+
+    async function toggleRegistration() {
+        const box = document.getElementById('regToggle');
+        try { const r = await rpc('sw_admin_set_registration', { p_open: box.checked }); box.checked = r.registrationOpen; }
+        catch (e) { alert(e.message); box.checked = !box.checked; }
+    }
+
+    // ---------- 学生列表 ----------
+    let playerCache = [];
+    async function loadPlayers() {
+        const tbody = document.getElementById('playerRows');
+        tbody.innerHTML = '<tr><td colspan="7" class="text-gray-500">加载中...</td></tr>';
+        try {
+            const list = playerCache = await rpc('sw_admin_players');
+            tbody.innerHTML = list.length ? list.map(p => `<tr class="border-t border-gray-700"><td class="font-mono">${esc(p.username)}${p.isAdmin ? ' <span class="text-xs text-pink-300">老师</span>' : ''}</td><td>${esc(p.characterName)}</td><td>${p.isAdmin ? '' : houseSelect(p)}</td><td class="text-yellow-400">${num(p.gold)}</td><td class="text-pink-300">${num(p.honor)}</td><td>${num(p.attack)} / ${num(p.defense)}</td><td class="text-right whitespace-nowrap"><button onclick="resetPassword('${esc(p.username)}')" class="btn bg-gray-700 hover:bg-gray-800 text-xs">重置密码</button>${p.isAdmin ? '' : ` <button onclick="deletePlayer('${esc(p.username)}')" class="btn bg-red-800 hover:bg-red-900 text-xs">删除</button>`}</td></tr>`).join('')
+                : '<tr><td colspan="7" class="text-gray-500">还没有学生账号</td></tr>';
+        } catch (e) { tbody.innerHTML = `<tr><td colspan="7" class="text-red-400">${esc(e.message)}</td></tr>`; }
+    }
+    async function resetPassword(username) {
+        const pwd = prompt(`为 ${username} 设置新密码（至少 6 位）：`);
+        if (!pwd) return;
+        try { await rpc('sw_admin_reset_password', { p_username: username, p_password: pwd }); alert(`${username} 的密码已重置为：${pwd}`); }
+        catch (e) { alert(`重置失败：${e.message}`); }
+    }
+
+    async function deletePlayer(username) {
+        const name = (playerCache.find(p => p.username === username) || {}).characterName || '';
+        if (!confirm(`确定要删除学生账号 ${username}（${name}）吗？\n\n该学生的金币、物品、卡牌、神奇动物、任务提交和答题记录会全部删除，无法恢复。`)) return;
+        const typed = prompt(`为防止误删，请输入该学生的账号名「${username}」确认：`);
+        if (typed === null) return;
+        if (typed.trim().toLowerCase() !== username.toLowerCase()) return alert('输入的账号名不一致，已取消删除。');
+        try { const r = await rpc('sw_admin_delete_player', { p_username: username, p_confirm: typed }); alert(`已删除账号 ${r.username}（${r.characterName}）`); loadPlayers(); }
+        catch (e) { alert(`删除失败：${e.message}`); }
+    }
+
+    // ---------- 发放 / 扣除金币 ----------
+    async function grantGold() {
+        const lines = document.getElementById('goldList').value.split('\n').map(s => s.trim()).filter(Boolean);
+        const tasks = [], errors = [];
+        lines.forEach((line, i) => {
+            const m = line.match(/^(\S+)[\s,，:：]+(-?\d+)$/);
+            if (!m || parseInt(m[2], 10) === 0) errors.push(`第 ${i + 1} 行格式不对：${line}`);
+            else tasks.push({ username: m[1], amount: parseInt(m[2], 10) });
+        });
+        const out = document.getElementById('grantResults');
+        if (errors.length) { out.innerHTML = errors.map(e => `<p class="text-red-400">${esc(e)}</p>`).join(''); return; }
+        if (!tasks.length) return alert('请至少填写一行。');
+        const plus = tasks.filter(t => t.amount > 0).reduce((s, t) => s + t.amount, 0);
+        const minus = tasks.filter(t => t.amount < 0).reduce((s, t) => s - t.amount, 0);
+        if (!confirm(`共 ${tasks.length} 位同学：发放 ${plus} 枚，扣除 ${minus} 枚。确定执行吗？`)) return;
+        const reason = document.getElementById('goldReason').value.trim() || null;
+        const btn = document.getElementById('grantBtn'); btn.disabled = true; out.innerHTML = '';
+        let ok = 0;
+        for (const t of tasks) {
+            const row = document.createElement('p');
+            try {
+                const r = await rpc('sw_admin_add_gold', { p_username: t.username, p_amount: t.amount, p_reason: reason });
+                row.className = 'text-green-400';
+                row.textContent = `✓ ${r.username}（${r.characterName}）${r.applied >= 0 ? '+' : ''}${r.applied}，现在 ${r.gold} 枚${r.applied !== t.amount ? '（金币不够，只扣到 0）' : ''}`;
+                ok++;
+            } catch (e) { row.className = 'text-red-400'; row.textContent = `✗ ${t.username}：${e.message}`; }
+            out.appendChild(row);
+        }
+        document.getElementById('grantSummary').textContent = `完成：成功 ${ok} 条，失败 ${tasks.length - ok} 条`;
+        btn.disabled = false; loadPlayers();
+    }
+
+    // ---------- 批量创建账号 ----------
+    async function createAccounts() {
+        const lines = document.getElementById('accountList').value.split('\n').map(s => s.trim()).filter(Boolean);
+        if (!lines.length) return alert('请至少填写一行。');
+        if (lines.length > 200) return alert('一次最多 200 个。');
+        const accounts = lines.map(line => {
+            const [username, password, ...rest] = line.split(/[\s,，]+/);
+            return { username, password: password || String(Math.floor(100000 + Math.random() * 900000)), characterName: rest.join(' ') || null };
+        });
+        if (!confirm(`将创建 ${accounts.length} 个账号，确定吗？`)) return;
+        const btn = document.getElementById('createBtn'); btn.disabled = true;
+        try {
+            const results = await rpc('sw_admin_create_accounts', { p_accounts: accounts });
+            const okRows = accounts.filter((a, i) => results[i] && results[i].ok);
+            const bad = results.filter(r => !r.ok);
+            document.getElementById('createResults').innerHTML =
+                `<p class="text-green-400 mb-2">成功 ${okRows.length} 个${bad.length ? `，失败 ${bad.length} 个` : ''}。请把下面的账号密码抄给学生（关掉页面后就看不到密码了）：</p>` +
+                (okRows.length ? `<textarea readonly rows="${Math.min(okRows.length + 1, 15)}" class="field font-mono">${esc(okRows.map(a => `${a.username}\t${a.password}\t${a.characterName || ''}`).join('\n'))}</textarea>` : '') +
+                bad.map(r => `<p class="text-red-400">✗ ${esc(r.username)}：${esc(r.message)}</p>`).join('');
+            loadPlayers();
+        } catch (e) { alert(`创建失败：${e.message}`); }
+        btn.disabled = false;
+    }
+
+    // ---------- 卡牌兑现 ----------
+    async function loadCardUsages() {
+        const tbody = document.getElementById('cardRows');
+        tbody.innerHTML = '<tr><td colspan="5" class="text-gray-500">加载中...</td></tr>';
+        try {
+            const list = await rpc('sw_admin_card_usages');
+            tbody.innerHTML = list.length ? list.map(u => `<tr class="border-t border-gray-700 ${u.redeemed ? 'text-gray-500' : ''}"><td class="whitespace-nowrap">${esc(new Date(u.usedAt).toLocaleString('zh-CN'))}</td><td>${esc(u.characterName)} <span class="font-mono text-xs">${esc(u.username)}</span></td><td>${esc(u.cardName)}</td><td>${esc(u.description)}</td><td>${u.redeemed ? '已兑现' : `<button onclick="redeem(${num(u.id)})" class="btn bg-blue-600 hover:bg-blue-700 text-xs">标记已兑现</button>`}</td></tr>`).join('')
+                : '<tr><td colspan="5" class="text-gray-500">还没有学生使用过卡牌</td></tr>';
+        } catch (e) { tbody.innerHTML = `<tr><td colspan="5" class="text-red-400">${esc(e.message)}</td></tr>`; }
+    }
+    async function redeem(id) { try { await rpc('sw_admin_redeem_card', { p_usage_id: id }); loadCardUsages(); } catch (e) { alert(e.message); } }
+
+    // ---------- 商店 ----------
+    async function imageFrom(urlId, fileId) {
+        const file = document.getElementById(fileId).files[0];
+        if (file) return await resizeImage(file);
+        return document.getElementById(urlId).value.trim() || null;
+    }
+    async function addProduct(params, form) {
+        try { await rpc('sw_admin_add_product', params); alert(`"${params.p_name}" 已上架！`); form.reset(); loadProducts(); }
+        catch (e) { alert(`添加失败：${e.message}`); }
+    }
+    document.getElementById('equipForm').addEventListener('submit', async e => {
+        e.preventDefault();
+        try {
+            await addProduct({ p_type: 'equipment', p_name: document.getElementById('eqName').value.trim(), p_image: await imageFrom('eqImage', 'eqFile'),
+                p_price: parseInt(document.getElementById('eqPrice').value, 10), p_attack: parseInt(document.getElementById('eqAttack').value, 10),
+                p_defense: parseInt(document.getElementById('eqDefense').value, 10), p_description: null, p_slot: document.getElementById('eqSlot').value }, e.target);
+        } catch (err) { alert(err.message); }
+    });
+    document.getElementById('cardForm').addEventListener('submit', async e => {
+        e.preventDefault();
+        try {
+            await addProduct({ p_type: 'card', p_name: document.getElementById('cdName').value.trim(), p_image: await imageFrom('cdImage', 'cdFile'),
+                p_price: parseInt(document.getElementById('cdPrice').value, 10), p_attack: 0, p_defense: 0, p_slot: null,
+                p_description: document.getElementById('cdDesc').value.trim() }, e.target);
+        } catch (err) { alert(err.message); }
+    });
+    let products = { equipment: [], card: [] };
+    async function loadProducts() {
+        for (const [type, elId] of [['equipment', 'equipList'], ['card', 'cardList']]) {
+            const el = document.getElementById(elId);
+            try {
+                products[type] = await rpc('sw_list_products', { p_type: type }, false) || [];
+                el.innerHTML = products[type].length ? products[type].map(p => `<div class="flex justify-between items-center bg-gray-800 rounded p-2"><div class="min-w-0"><p class="font-bold truncate">${esc(p.name)} <span class="text-yellow-400 text-sm">${num(p.price)} 金币</span></p><p class="text-xs text-gray-400 truncate">${type === 'card' ? esc(p.description) : `攻 ${num(p.attack)} · 防 ${num(p.defense)}`}</p></div>${type === 'equipment' ? `<select onchange="setSlot(${num(p.id)}, this.value)" class="field text-xs ml-2" style="width:auto" title="修改栏位">${[['wand','魔杖'],['robe','长袍'],['hat','帽子'],['accessory','饰品']].map(([k,l]) => `<option value="${k}" ${p.slot === k ? 'selected' : ''}>${l}</option>`).join('')}</select>` : ''}<button onclick="deleteProduct(${num(p.id)}, '${type}')" class="btn bg-red-600 hover:bg-red-700 text-xs ml-2" title="下架"><i class="fas fa-trash"></i></button></div>`).join('')
+                    : '<p class="text-gray-500 text-sm">暂无</p>';
+            } catch (e) { el.innerHTML = `<p class="text-red-400 text-sm">加载失败：${esc(e.message)}</p>`; }
+        }
+    }
+    async function setSlot(id, slot) {
+        try { await rpc('sw_admin_set_product_slot', { p_product_id: id, p_slot: slot }); }
+        catch (e) { alert(`修改栏位失败：${e.message}`); loadProducts(); }
+    }
+    async function deleteProduct(id, type) {
+        const p = products[type].find(x => Number(x.id) === Number(id));
+        if (!confirm(`确定要下架 "${p ? p.name : id}" 吗？`)) return;
+        try { await rpc('sw_admin_delete_product', { p_product_id: id }); loadProducts(); } catch (e) { alert(`下架失败：${e.message}`); }
+    }
+
+
+    // ---------- 任务与作业 ----------
+    const TASK_TYPES = { daily: ['每日任务', 'bg-green-600'], honor: ['荣誉作业', 'bg-purple-600'], bounty: ['赏金任务', 'bg-yellow-600'] };
+    function typeBadge(type) { const [l, c] = TASK_TYPES[type] || ['任务', 'bg-gray-600']; return `<span class="${c} text-white text-xs px-2 py-0.5 rounded-full whitespace-nowrap flex-shrink-0">${l}</span>`; }
+    function fmtTime(t) { if (!t) return ''; const d = new Date(t); return `${d.getMonth() + 1}月${d.getDate()}日 ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`; }
+    function safeImg(u) { return /^data:image\/(png|jpeg|webp|gif);base64,[A-Za-z0-9+/=]+$/.test(String(u || '')) || /^https?:\/\//i.test(String(u || '')) ? String(u) : ''; }
+    function compressPhoto(file) {
+        return new Promise((resolve, reject) => {
+            if (!file.type.startsWith('image/')) return reject(new Error('请选择图片文件'));
+            const reader = new FileReader();
+            reader.onerror = () => reject(new Error('读取图片失败'));
+            reader.onload = () => {
+                const img = new Image();
+                img.onerror = () => reject(new Error('无法识别这张图片'));
+                img.onload = () => {
+                    let maxSide = 1280, quality = 0.8, out = '';
+                    for (let i = 0; i < 6; i++) {
+                        const scale = Math.min(1, maxSide / Math.max(img.width, img.height));
+                        const c = document.createElement('canvas'); c.width = Math.round(img.width * scale); c.height = Math.round(img.height * scale);
+                        const ctx = c.getContext('2d'); ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, c.width, c.height); ctx.drawImage(img, 0, 0, c.width, c.height);
+                        out = c.toDataURL('image/jpeg', quality);
+                        if (out.length <= 440000) return resolve(out);
+                        maxSide = Math.round(maxSide * 0.8); quality = Math.max(0.5, quality - 0.08);
+                    }
+                    reject(new Error('图片太大了，请换一张'));
+                };
+                img.src = reader.result;
+            };
+            reader.readAsDataURL(file);
+        });
+    }
+    document.getElementById('taskForm').addEventListener('submit', async e => {
+        e.preventDefault();
+        const btn = document.getElementById('tkSubmit'); btn.disabled = true;
+        try {
+            const file = document.getElementById('tkFile').files[0];
+            const deadline = document.getElementById('tkDeadline').value;
+            const type = document.getElementById('tkType').value;
+            await rpc('sw_admin_create_task', {
+                p_type: type, p_title: document.getElementById('tkTitle').value.trim(),
+                p_content: document.getElementById('tkContent').value.trim(),
+                p_image: file ? await compressPhoto(file) : null,
+                p_reward_gold: parseInt(document.getElementById('tkReward').value, 10) || 0,
+                p_deadline: deadline ? new Date(deadline).toISOString() : null });
+            alert('任务已发布，学生在首页的任务公告板就能看到。');
+            e.target.reset(); document.getElementById('tkReward').value = 10; loadTasks();
+        } catch (err) { alert(`发布失败：${err.message}`); }
+        btn.disabled = false;
+    });
+    let tasksCache = [];
+    async function loadTasks() {
+        const box = document.getElementById('taskList');
+        try {
+            tasksCache = await rpc('sw_admin_list_tasks') || [];
+            box.innerHTML = tasksCache.length ? tasksCache.map(t => `<div class="bg-gray-800 rounded p-3"><div class="flex justify-between items-start gap-2"><div class="min-w-0"><div class="flex items-center gap-2 mb-1">${typeBadge(t.type)}<span class="font-bold truncate">${esc(t.title)}</span></div><p class="text-xs text-gray-400">奖励 ${num(t.rewardGold)} 金币 · ${t.deadline ? `截止 ${fmtTime(t.deadline)}` : '长期有效'}${t.open ? '' : ' · <span class="text-red-400">已截止</span>'}</p><p class="text-xs mt-1"><span class="text-blue-300">待批改 ${num(t.pending)}</span> · <span class="text-green-400">已通过 ${num(t.approved)}</span> · 共 ${num(t.total)} 份</p></div><div class="flex flex-col gap-1 flex-shrink-0"><button onclick="filterByTask(${num(t.id)})" class="btn bg-blue-600 hover:bg-blue-700 text-xs">看提交</button><button onclick="closeTask(${num(t.id)})" class="btn bg-gray-600 hover:bg-gray-700 text-xs">关闭</button></div></div></div>`).join('')
+                : '<p class="text-gray-500 text-sm">还没有进行中的任务</p>';
+            const sel = document.getElementById('subTaskFilter'), cur = sel.value;
+            sel.innerHTML = '<option value="">所有任务</option>' + tasksCache.map(t => `<option value="${num(t.id)}">${esc(t.title)}</option>`).join('');
+            sel.value = cur;
+            const pending = tasksCache.reduce((a, t) => a + num(t.pending), 0);
+            const badge = document.getElementById('pendingBadge'); badge.textContent = pending; badge.classList.toggle('hidden', pending === 0);
+        } catch (e) { box.innerHTML = `<p class="text-red-400 text-sm">${esc(e.message)}</p>`; }
+        rpc('sw_admin_db_usage').then(u => { document.getElementById('dbUsage').textContent = `数据库已用 ${(u.bytes / 1048576).toFixed(1)}MB / 500MB`; }).catch(() => { });
+    }
+    function filterByTask(id) { document.getElementById('subTaskFilter').value = String(id); document.getElementById('subFilter').value = 'all'; loadSubmissions(); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+    async function closeTask(id) {
+        const t = tasksCache.find(x => Number(x.id) === Number(id));
+        if (!confirm(`确定关闭任务 "${t ? t.title : id}" 吗？关闭后学生看不到、也不能再提交（已提交的仍可批改）。`)) return;
+        try { await rpc('sw_admin_close_task', { p_task_id: id }); loadTasks(); } catch (e) { alert(e.message); }
+    }
+    let subsCache = [];
+    async function loadSubmissions() {
+        const box = document.getElementById('submissionList');
+        box.innerHTML = '<p class="text-gray-500 text-sm">加载中...</p>';
+        const taskId = document.getElementById('subTaskFilter').value;
+        try {
+            subsCache = await rpc('sw_admin_submissions', { p_status: document.getElementById('subFilter').value, p_task_id: taskId ? Number(taskId) : null }) || [];
+            if (!subsCache.length) { box.innerHTML = '<p class="text-gray-500 text-sm">没有需要显示的提交</p>'; return; }
+            box.innerHTML = subsCache.map(s => {
+                const done = s.status !== 'pending';
+                const statusTag = s.status === 'approved' ? '<span class="text-green-400 font-bold">已通过</span>' : s.status === 'rejected' ? '<span class="text-red-400 font-bold">未通过</span>' : '<span class="text-blue-300 font-bold">待批改</span>';
+                return `<div class="bg-gray-800 rounded-lg p-4" id="sub-${num(s.id)}">
+                    <div class="flex flex-wrap justify-between gap-2 mb-2"><div class="flex items-center gap-2">${typeBadge(s.taskType)}<span class="font-bold">${esc(s.taskTitle)}</span>${s.taskType === 'daily' ? `<span class="text-xs text-gray-400">${esc(s.period)}</span>` : ''}</div><div class="text-sm">${statusTag} <span class="text-gray-400 text-xs ml-2">${fmtTime(s.submittedAt)}</span></div></div>
+                    <p class="mb-2"><span class="text-pink-300 font-bold">${esc(s.characterName)}</span> <span class="text-xs text-gray-500 font-mono">${esc(s.username)}</span></p>
+                    ${s.text ? `<p class="text-gray-200 whitespace-pre-wrap text-sm mb-2">${esc(s.text)}</p>` : ''}
+                    <div class="flex flex-wrap gap-2 mb-2" id="imgs-${num(s.id)}">${num(s.imageCount) ? `<span class="text-xs text-gray-500">正在加载 ${num(s.imageCount)} 张照片...</span>` : ''}</div>
+                    ${done ? `<p class="text-sm text-gray-400">${num(s.goldChange) ? `金币 ${s.goldChange > 0 ? '+' : ''}${num(s.goldChange)}　` : ''}${s.comment ? `评语：${esc(s.comment)}` : ''}</p>` : `
+                    <div class="flex flex-wrap items-end gap-2 mt-3 border-t border-gray-700 pt-3">
+                        <label class="text-xs text-gray-400">金币<input id="gold-${num(s.id)}" type="number" step="1" value="${num(s.rewardGold)}" class="field mt-1" style="width:6rem"></label>
+                        <label class="text-xs text-gray-400 flex-1" style="min-width:12rem">评语（可选）<input id="cmt-${num(s.id)}" maxlength="500" class="field mt-1" placeholder="写给学生的话"></label>
+                        <button onclick="review(${num(s.id)}, true)" class="btn bg-green-600 hover:bg-green-700">通过</button>
+                        <button onclick="review(${num(s.id)}, false)" class="btn bg-red-600 hover:bg-red-700">不通过</button>
+                    </div>`}
+                </div>`;
+            }).join('');
+            for (const s of subsCache) {   // 照片逐个加载，列表先出来
+                if (!num(s.imageCount)) continue;
+                try {
+                    const imgs = await rpc('sw_admin_submission_images', { p_submission_id: s.id }) || [];
+                    const el = document.getElementById(`imgs-${num(s.id)}`);
+                    if (el) el.innerHTML = imgs.map(u => safeImg(u) ? `<img src="${esc(safeImg(u))}" onclick="window.showBig(this.src)" class="w-28 h-28 object-cover rounded cursor-zoom-in">` : '').join('') || '<span class="text-xs text-gray-500">照片已清理</span>';
+                } catch (e) { }
+            }
+        } catch (e) { box.innerHTML = `<p class="text-red-400 text-sm">${esc(e.message)}</p>`; }
+    }
+    async function review(id, approve) {
+        const goldInput = document.getElementById(`gold-${id}`);
+        let gold = parseInt(goldInput.value, 10) || 0;
+        if (!approve && gold > 0 && !confirm(`不通过但仍奖励 ${gold} 金币？（点"取消"则按 0 处理，要扣金币请填负数）`)) gold = 0;
+        const comment = document.getElementById(`cmt-${id}`).value.trim() || null;
+        try {
+            const r = await rpc('sw_admin_review', { p_submission_id: id, p_approve: approve, p_gold: gold, p_comment: comment });
+            const card = document.getElementById(`sub-${id}`);
+            if (card) card.innerHTML = `<p class="${approve ? 'text-green-400' : 'text-red-400'}">✓ 已${approve ? '通过' : '标记为不通过'}：${esc(r.characterName)}${r.applied ? `，金币 ${r.applied > 0 ? '+' : ''}${r.applied}，现在 ${r.gold} 枚` : ''}${r.applied !== gold ? '（金币不够，只扣到 0）' : ''}</p>`;
+            loadTasks();
+        } catch (e) { alert(`批改失败：${e.message}`); }
+    }
+    window.showBig = function (src) {
+        const w = document.getElementById('bigViewer'); document.getElementById('bigViewerImg').src = src; w.style.display = 'flex';
+    };
+
+
+    // ---------- 学院 ----------
+    const HOUSES = { gryffindor: ['🦁', '格兰芬多'], slytherin: ['🐍', '斯莱特林'], ravenclaw: ['🦅', '拉文克劳'], hufflepuff: ['🦡', '赫奇帕奇'] };
+    function houseSelect(p) {
+        return `<select onchange="setHouse('${esc(p.username)}', this.value)" class="field text-xs" style="width:auto;padding:.2rem .4rem"><option value="">未分院</option>${Object.entries(HOUSES).map(([k, [i, n]]) => `<option value="${k}" ${p.house === k ? 'selected' : ''}>${i} ${n}</option>`).join('')}</select>`;
+    }
+    async function setHouse(username, house) {
+        try { await rpc('sw_admin_set_house', { p_username: username, p_house: house || null }); }
+        catch (e) { alert(`设置学院失败：${e.message}`); loadPlayers(); }
+    }
+    async function loadHouseCup() {
+        const box = document.getElementById('houseCupList');
+        try {
+            const list = await rpc('sw_house_cup', {}, false) || [];
+            box.innerHTML = list.map((h, i) => `<div class="bg-gray-800 rounded p-3 flex justify-between items-center"><div><span class="text-lg">${i === 0 && num(h.total) > 0 ? '🏆 ' : ''}${HOUSES[h.house][0]} <b>${esc(h.name)}</b></span> <span class="text-xs text-gray-400">${num(h.members)} 人</span><p class="text-xs text-gray-400 mt-1">成员荣誉 ${num(h.honor)} + 老师加分 ${num(h.bonus)}</p></div><span class="text-2xl font-bold text-yellow-300">${num(h.total)}</span></div>`).join('');
+        } catch (e) { box.innerHTML = `<p class="text-red-400 text-sm">${esc(e.message)}</p>`; }
+    }
+    async function addHousePoints() {
+        const house = document.getElementById('hpHouse').value, amount = parseInt(document.getElementById('hpAmount').value, 10);
+        if (!amount) return alert('请填写分数（不能为 0）');
+        if (!confirm(`给${HOUSES[house][1]}${amount > 0 ? '加' : '扣'} ${Math.abs(amount)} 分，确定吗？`)) return;
+        try {
+            await rpc('sw_admin_house_points', { p_house: house, p_amount: amount, p_reason: document.getElementById('hpReason').value.trim() || null });
+            document.getElementById('hpAmount').value = ''; document.getElementById('hpReason').value = ''; loadHouseCup();
+        } catch (e) { alert(`操作失败：${e.message}`); }
+    }
+
+    // ---------- 谜语题库 ----------
+    async function addRiddles() {
+        const lines = document.getElementById('riddleInput').value.split('\n').map(s => s.trim()).filter(Boolean);
+        const items = [], errors = [];
+        lines.forEach((line, i) => {
+            const parts = line.split(/[|｜]/).map(x => x.trim()).filter(x => x !== '');
+            let honor = 5;
+            if (parts.length && /^\d+$/.test(parts[parts.length - 1]) && /^[A-Da-d]$/.test(parts[parts.length - 2] || '')) honor = parseInt(parts.pop(), 10);
+            const ans = (parts.pop() || '').toUpperCase(), q = parts.shift(), opts = parts;
+            if (!q || opts.length < 2 || opts.length > 4 || !/^[A-D]$/.test(ans) || 'ABCD'.indexOf(ans) >= opts.length) errors.push(`第 ${i + 1} 行格式不对：${line}`);
+            else items.push({ question: q, options: opts, answer: 'ABCD'.indexOf(ans), honor });
+        });
+        const out = document.getElementById('riddleAddResults');
+        if (errors.length) { out.innerHTML = errors.map(e => `<p class="text-red-400">${esc(e)}</p>`).join(''); return; }
+        if (!items.length) return alert('请至少填写一道题');
+        const btn = document.getElementById('riddleAddBtn'); btn.disabled = true;
+        try {
+            const res = await rpc('sw_admin_add_riddles', { p_items: items });
+            const ok = res.filter(r => r.ok).length;
+            out.innerHTML = `<p class="text-green-400">成功添加 ${ok} 道题</p>` + res.filter(r => !r.ok).map(r => `<p class="text-red-400">✗ ${esc(r.question)}：${esc(r.message)}</p>`).join('');
+            if (ok) document.getElementById('riddleInput').value = '';
+            loadRiddles();
+        } catch (e) { alert(`添加失败：${e.message}`); }
+        btn.disabled = false;
+    }
+    async function loadRiddles() {
+        const box = document.getElementById('riddleList');
+        try {
+            const list = await rpc('sw_admin_list_riddles') || [];
+            box.innerHTML = list.length ? list.map(r => `<div class="bg-gray-800 rounded p-3 ${r.active ? '' : 'opacity-50'}"><div class="flex justify-between gap-3"><div class="min-w-0"><p class="font-bold">${esc(r.question)} <span class="text-xs text-yellow-300 font-normal">+${num(r.honor)} 荣誉</span></p><p class="text-xs text-gray-400 mt-1">${(r.options || []).map((o, i) => `<span class="${i === r.answer ? 'text-green-400 font-bold' : ''}">${'ABCD'[i]}. ${esc(o)}</span>`).join('　')}</p><p class="text-xs text-gray-500 mt-1">已答 ${num(r.answered)} 人 · 答对 ${num(r.correct)} 人${num(r.answered) ? `（正确率 ${Math.round(num(r.correct) / num(r.answered) * 100)}%）` : ''}</p></div><button onclick="toggleRiddle(${num(r.id)}, ${!r.active})" class="btn ${r.active ? 'bg-gray-600 hover:bg-gray-700' : 'bg-green-700 hover:bg-green-800'} text-xs flex-shrink-0 h-fit">${r.active ? '停用' : '启用'}</button></div></div>`).join('')
+                : '<p class="text-gray-500 text-sm">题库还是空的</p>';
+        } catch (e) { box.innerHTML = `<p class="text-red-400 text-sm">${esc(e.message)}</p>`; }
+    }
+    async function toggleRiddle(id, active) { try { await rpc('sw_admin_toggle_riddle', { p_riddle_id: id, p_active: active }); loadRiddles(); } catch (e) { alert(e.message); } }
+
+    // ---------- 启动：如果本标签页已登录过，直接进入 ----------
+    (async () => {
+        if (!sb) { showLogin(configReady ? '无法加载 Supabase 组件，请检查网络。' : '还没有配置 Supabase 地址和密钥（见本页源代码开头的配置区）。'); return; }
+        if (sessionStorage.getItem(TOKEN_KEY)) {
+            try { const s = await rpc('sw_get_state'); if (s.isAdmin) enterMain(s); } catch (e) { }
+        }
+    })();
+</script>
+</body>
+</html>
