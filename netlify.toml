@@ -1,0 +1,6 @@
+# Netlify 设置：把 /sbapi/... 的请求转发给 Supabase（让被浏览器插件拦截的设备也能连上数据库）
+[[redirects]]
+  from = "/sbapi/rest/v1/*"
+  to = "https://rxnaklyaiquqlmjymzkk.supabase.co/rest/v1/:splat"
+  status = 200
+  force = true

@@ -144,6 +144,11 @@
         <!-- 谜语题库 -->
         <section id="tab-riddles" class="hidden space-y-6">
             <div class="panel p-5">
+                <div class="flex justify-between items-center mb-1"><h2 class="text-xl font-bold text-yellow-300"><i class="fas fa-spell-check mr-2"></i>English Grammar 题组（黑巫师）</h2><button onclick="loadGrammarSets()" class="btn bg-gray-600 hover:bg-gray-700 text-sm"><i class="fas fa-sync-alt"></i></button></div>
+                <p class="text-sm text-gray-400 mb-3">学生端 Riddles → English Grammar 里，每个题组是一个黑巫师，名称显示在黑巫师下方。学生做完整套题就算击败。可以修改名称、类别、排列顺序（数字小的排在前面），取消"显示"则学生看不到这个题组（进度会保留）。</p>
+                <div id="grammarSetList" class="space-y-2"></div>
+            </div>
+            <div class="panel p-5">
                 <h2 class="text-xl font-bold text-green-300 mb-2"><i class="fas fa-book-open mr-2"></i>批量添加题目</h2>
                 <p class="text-sm text-gray-400 mb-3">每行一道题，用竖线 <code class="text-pink-300">|</code> 隔开：<code class="text-pink-300">题目 | 选项A | 选项B | 选项C | 选项D | 正确答案字母 | 荣誉点</code><br>选项可以 2-4 个；荣誉点可以不写（默认 5）。每道题每个学生只能答一次，答对得荣誉点，答错不扣分。</p>
                 <textarea id="riddleInput" rows="6" class="field font-mono" placeholder="3 × 4 = ? | 7 | 12 | 34 | 1 | B&#10;中国的首都是哪里？ | 上海 | 北京 | 广州 | 深圳 | B | 3&#10;水的化学式是？ | H2O | CO2 | A"></textarea>
@@ -264,14 +269,41 @@
 
     const TOKEN_KEY = 'starwartsTeacherToken';   // 存在 sessionStorage，关掉标签页即退出
     const configReady = !SUPABASE_URL.includes('你的项目') && !SUPABASE_KEY.includes('你的');
-    const sb = (configReady && window.supabase) ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: false } }) : null;
+    // 连接数据库：优先走本站转发（/sbapi，防止 iPad 等设备的插件拦截），不可用时直接连 Supabase
+    const SB_OPTS = { auth: { persistSession: false, autoRefreshToken: false } };
+    const sbDirect = (configReady && window.supabase) ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, SB_OPTS) : null;
+    const sbProxy = (sbDirect && /^https?:$/.test(location.protocol) && !/github\.io$/i.test(location.hostname))
+        ? window.supabase.createClient(location.origin + '/sbapi', SUPABASE_KEY, SB_OPTS) : null;
+    let sb = sbDirect;
+    const sbReady = (async () => {
+        if (!sbProxy) return;
+        try {
+            const r = await Promise.race([sbProxy.rpc('sw_public_settings'), new Promise(res => setTimeout(() => res({ error: { message: 'timeout' } }), 5000))]);
+            if (r && !r.error && r.data && typeof r.data === 'object') sb = sbProxy;
+        } catch (e) { }
+    })();
+    const SB_NET_ERR = /Load failed|Failed to fetch|NetworkError|Network request failed|network connection was lost|fetch failed/i;
+    async function sbCall(fn, params) {
+        await sbReady;
+        let r = await sb.rpc(fn, params);
+        for (let i = 0; i < 2 && r.error && SB_NET_ERR.test(r.error.message || ''); i++) {
+            await new Promise(res => setTimeout(res, 700 * (i + 1)));
+            r = await sb.rpc(fn, params);
+        }
+        const other = sb === sbProxy ? sbDirect : sbProxy;
+        if (r.error && SB_NET_ERR.test(r.error.message || '') && other) {
+            const r2 = await other.rpc(fn, params);
+            if (!r2.error || !SB_NET_ERR.test(r2.error.message || '')) { sb = other; return r2; }
+        }
+        return r;
+    }
 
     function esc(value) { return String(value ?? '').replace(/[&<>"'`]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;', '`': '&#96;' }[c])); }
     function num(v) { const n = Number(v); return Number.isFinite(n) ? n : 0; }
     async function rpc(fn, params = {}, needLogin = true) {
         if (!sb) throw new Error('还没有配置 Supabase 地址和密钥（见本页源代码的配置区）');
         if (needLogin) params = { p_token: sessionStorage.getItem(TOKEN_KEY) || '', ...params };
-        const { data, error } = await sb.rpc(fn, params);
+        const { data, error } = await sbCall(fn, params);
         if (error) {
             if (/登录已过期/.test(error.message || '')) { sessionStorage.removeItem(TOKEN_KEY); showLogin('登录已过期，请重新登录'); }
             if (error.code === 'PGRST202' || /Could not find the function/.test(error.message || '')) throw new Error('数据库需要更新：请在 Supabase 的 SQL Editor 里重新运行最新的 supabase_setup.sql');
@@ -338,7 +370,7 @@
         if (btn.dataset.tab === 'cards') loadCardUsages();
         if (btn.dataset.tab === 'tasks') { loadTasks(); loadSubmissions(); }
         if (btn.dataset.tab === 'houses') loadHouseCup();
-        if (btn.dataset.tab === 'riddles') loadRiddles();
+        if (btn.dataset.tab === 'riddles') { loadRiddles(); loadGrammarSets(); }
         if (btn.dataset.tab === 'shop') loadProducts();
         if (btn.dataset.tab === 'data') loadDataTab();
     }));
@@ -452,8 +484,8 @@
             const data = await rpc('sw_admin_export');
             const house = { gryffindor: '格兰芬多', slytherin: '斯莱特林', ravenclaw: '拉文克劳', hufflepuff: '赫奇帕奇' };
             const cell = v => { let x = String(v ?? ''); if (/^[=+\-@]/.test(x)) x = "'" + x; return /[",\n]/.test(x) ? `"${x.replace(/"/g, '""')}"` : x; };
-            const rows = [['账号', '角色名', '学院', '金币', '荣誉点', '攻击', '防御', '哈利波特题已掌握', '作业通过数', '谜语答对数', '注册时间']]
-                .concat(data.summary.map(p => [p.username, p.characterName, house[p.house] || '未分院', p.gold, p.honor, p.attack, p.defense, p.hpMastered, p.tasksApproved, p.riddlesCorrect, new Date(p.createdAt).toLocaleDateString()]));
+            const rows = [['账号', '角色名', '学院', '金币', '荣誉点', '攻击', '防御', '哈利波特题已掌握', '作业通过数', '谜语答对数', '击败黑巫师数', '注册时间']]
+                .concat(data.summary.map(p => [p.username, p.characterName, house[p.house] || '未分院', p.gold, p.honor, p.attack, p.defense, p.hpMastered, p.tasksApproved, p.riddlesCorrect, num(p.grammarDefeated), new Date(p.createdAt).toLocaleDateString()]));
             downloadFile(`Starwarts学生成绩表_${today()}.csv`, '﻿' + rows.map(r => r.map(cell).join(',')).join('\r\n'), 'text/csv;charset=utf-8');
             msg.innerHTML = `<span class="text-green-400">✓ 已下载学生成绩表（${num(data.summary.length)} 名学生），可以用 Excel 或 WPS 打开。</span>`;
         } catch (e) { msg.innerHTML = `<span class="text-red-400">导出失败：${esc(e.message)}</span>`; }
@@ -747,6 +779,32 @@
         } catch (e) { alert(`添加失败：${e.message}`); }
         btn.disabled = false;
     }
+    // ---------- English Grammar 题组 ----------
+    async function loadGrammarSets() {
+        const box = document.getElementById('grammarSetList');
+        try {
+            const list = await rpc('sw_admin_grammar_sets') || [];
+            box.innerHTML = list.length ? list.map(g => `<div class="bg-gray-800 rounded p-3 ${g.active ? '' : 'opacity-60'}">
+                <div class="grid grid-cols-1 md:grid-cols-12 gap-2 items-end">
+                    <label class="md:col-span-4 text-xs text-gray-400">名称<input id="gs-title-${num(g.id)}" class="field mt-1" maxlength="40" value="${esc(g.title)}"></label>
+                    <label class="md:col-span-4 text-xs text-gray-400">类别<input id="gs-cat-${num(g.id)}" class="field mt-1" maxlength="40" value="${esc(g.category)}"></label>
+                    <label class="md:col-span-1 text-xs text-gray-400">顺序<input id="gs-sort-${num(g.id)}" type="number" class="field mt-1" value="${num(g.sortOrder)}"></label>
+                    <label class="md:col-span-1 text-xs text-gray-300 flex items-center gap-1 pb-2"><input id="gs-active-${num(g.id)}" type="checkbox" ${g.active ? 'checked' : ''}> 显示</label>
+                    <button onclick="saveGrammarSet(${num(g.id)})" class="md:col-span-2 btn bg-yellow-600 hover:bg-yellow-700 text-sm">保存</button>
+                </div>
+                <p class="text-xs text-gray-400 mt-2">${num(g.count)} 道主题 + ${num(g.followCount)} 道变式练习（答错时出现）· <span class="text-green-400">已有 ${num(g.defeated)} 名学生击败</span>${g.active ? '' : ' · <span class="text-red-400">已隐藏</span>'}</p>
+            </div>`).join('') : '<p class="text-gray-500 text-sm">还没有题组。请在 Supabase SQL Editor 里运行 grammar_questions.sql。</p>';
+        } catch (e) { box.innerHTML = `<p class="text-red-400 text-sm">${esc(e.message)}</p>`; }
+    }
+    async function saveGrammarSet(id) {
+        try {
+            await rpc('sw_admin_grammar_update', { p_set_id: id, p_title: document.getElementById(`gs-title-${id}`).value,
+                p_category: document.getElementById(`gs-cat-${id}`).value, p_sort_order: parseInt(document.getElementById(`gs-sort-${id}`).value, 10) || 0,
+                p_active: document.getElementById(`gs-active-${id}`).checked });
+            loadGrammarSets();
+        } catch (e) { alert(`保存失败：${e.message}`); }
+    }
+
     async function loadRiddles() {
         const box = document.getElementById('riddleList');
         try {

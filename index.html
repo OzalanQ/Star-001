@@ -170,7 +170,7 @@
         <input type="text" id="regCharNameInput" maxlength="20" class="field mb-3 hidden" placeholder="Character name (optional, can change later)">
         <input type="password" id="passwordInput" class="field mb-3" placeholder="Password">
         <input type="password" id="confirmPasswordInput" class="field mb-3 hidden" placeholder="Confirm password">
-        <div id="initialButtons" class="flex gap-3 mt-2"><button onclick="login()" class="flex-1 btn-crimson py-3 rounded-lg font-bold">Log In</button><button id="registerButton" onclick="showRegisterForm()" class="flex-1 btn-ghost py-3 rounded-lg">Sign Up</button></div>
+        <div id="initialButtons" class="flex gap-3 mt-2"><button onclick="login()" class="flex-1 btn-crimson py-3 rounded-lg font-bold">Log In</button><button id="registerButton" onclick="showRegisterForm()" class="flex-1 btn-ghost py-3 rounded-lg hidden">Sign Up</button></div>
         <div id="registerButtons" class="flex gap-3 mt-2 hidden"><button onclick="register()" class="flex-1 btn-crimson py-3 rounded-lg font-bold">Create Account</button><button onclick="hideRegisterForm()" class="flex-1 btn-ghost py-3 rounded-lg">Back to Log In</button></div>
     </div>
 </div>
@@ -451,7 +451,34 @@ const SUPABASE_KEY = 'sb_publishable_nb620Ckj_sCfdA_lE0yITg_3OSo6WQk';   // 只�
 
 const INVENTORY_SIZE = 30, MAX_NAME_LENGTH = 20, MAX_PRICE = 100000, TOKEN_KEY = 'starwartsToken';
 const configReady = !SUPABASE_URL.includes('你的项目') && !SUPABASE_KEY.includes('你的');
-const sb = (configReady && window.supabase) ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: false } }) : null;
+// 连接数据库：优先走本站转发（/sbapi，防止 iPad 等设备的插件拦截），不可用时直接连 Supabase
+const SB_OPTS = { auth: { persistSession: false, autoRefreshToken: false } };
+const sbDirect = (configReady && window.supabase) ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, SB_OPTS) : null;
+const sbProxy = (sbDirect && /^https?:$/.test(location.protocol) && !/github\.io$/i.test(location.hostname))
+    ? window.supabase.createClient(location.origin + '/sbapi', SUPABASE_KEY, SB_OPTS) : null;
+let sb = sbDirect;
+const sbReady = (async () => {
+    if (!sbProxy) return;
+    try {
+        const r = await Promise.race([sbProxy.rpc('sw_public_settings'), new Promise(res => setTimeout(() => res({ error: { message: 'timeout' } }), 5000))]);
+        if (r && !r.error && r.data && typeof r.data === 'object') sb = sbProxy;
+    } catch (e) { }
+})();
+const SB_NET_ERR = /Load failed|Failed to fetch|NetworkError|Network request failed|network connection was lost|fetch failed/i;
+async function sbCall(fn, params) {
+    await sbReady;
+    let r = await sb.rpc(fn, params);
+    for (let i = 0; i < 2 && r.error && SB_NET_ERR.test(r.error.message || ''); i++) {
+        await new Promise(res => setTimeout(res, 700 * (i + 1)));
+        r = await sb.rpc(fn, params);
+    }
+    const other = sb === sbProxy ? sbDirect : sbProxy;
+    if (r.error && SB_NET_ERR.test(r.error.message || '') && other) {
+        const r2 = await other.rpc(fn, params);
+        if (!r2.error || !SB_NET_ERR.test(r2.error.message || '')) { sb = other; return r2; }
+    }
+    return r;
+}
 
 let gameState = {}, globalEquipmentStore = [], globalMagicCardStore = [], currentListings = [], currentView = 'common';
 
@@ -490,12 +517,7 @@ function toast(msg, type = 'ok') {
 async function rpc(fn, params = {}, needLogin = true) {
     if (!sb) throw new Error('This site is not connected to its database yet. Please tell your teacher.');
     if (needLogin) params = { p_token: localStorage.getItem(TOKEN_KEY) || '', ...params };
-    let { data, error } = await sb.rpc(fn, params);
-    // 网络偶尔失败（iPad 上提示 "Load failed"）时自动重试两次
-    for (let i = 0; i < 2 && error && NET_ERR.test(error.message || ''); i++) {
-        await new Promise(r => setTimeout(r, 700 * (i + 1)));
-        ({ data, error } = await sb.rpc(fn, params));
-    }
+    const { data, error } = await sbCall(fn, params);
     if (error) { const err = new Error(tr(error.message || 'Request failed')); if (/登录已过期/.test(error.message || '')) err.sessionExpired = true; throw err; }
     return data;
 }
@@ -597,15 +619,20 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.querySelectorAll('.nav-btn').forEach(b => b.addEventListener('click', () => switchView(b.dataset.view)));
     $('listItemForm').addEventListener('submit', handleListItemSubmit);
     if (!sb) { showMessage('loginError', configReady ? 'Could not load the game. Please check your connection and refresh.' : 'This site is not connected to its database yet.'); return; }
-    try { const s = await rpc('sw_public_settings', {}, false); if (s && s.registrationOpen === false) $('registerButton').classList.add('hidden'); } catch (e) { }
-    if (localStorage.getItem(TOKEN_KEY)) { try { gameState = await rpc('sw_get_state'); await enterGame(); } catch (e) { localStorage.removeItem(TOKEN_KEY); } }
+    // 默认隐藏"Sign Up"，只有确认老师开放了注册才显示（网络失败时也保持隐藏）
+    try { const s = await rpc('sw_public_settings', {}, false); regOpen = !!(s && s.registrationOpen === true); } catch (e) { regOpen = false; }
+    $('registerButton').classList.toggle('hidden', !regOpen);
+    if (!regOpen) $('modalSubtitle').textContent = 'Log in with the account from your teacher';
+    if (localStorage.getItem(TOKEN_KEY)) { try { gameState = await rpc('sw_get_state'); await enterGame(); } catch (e) { if (!NET_ERR.test(e.message || '') && !/Cannot reach/.test(e.message || '')) localStorage.removeItem(TOKEN_KEY); } }
 });
 function createStarfield() { const f = $('starfield'); for (let i = 0; i < 90; i++) { const s = document.createElement('div'); s.className = 'star'; s.style.left = Math.random() * 100 + '%'; s.style.top = Math.random() * 100 + '%'; s.style.width = s.style.height = Math.random() * 2.5 + 1 + 'px'; s.style.animationDelay = Math.random() * 2.5 + 's'; f.appendChild(s); } }
 function showMessage(id, msg, isError = true) { const d = $(id); d.textContent = msg; d.className = isError ? 'text-red-400 mb-2' : 'text-green-400 mb-2'; d.classList.remove('hidden'); }
 
 // ===================== 账号 =====================
-function showRegisterForm() { $('modalSubtitle').textContent = 'Usernames: letters, numbers or underscores'; $('regCharNameInput').classList.remove('hidden'); $('confirmPasswordInput').classList.remove('hidden'); $('initialButtons').classList.add('hidden'); $('registerButtons').classList.remove('hidden'); $('loginError').classList.add('hidden'); }
-function hideRegisterForm() { $('modalSubtitle').textContent = 'Log in or create an account'; $('regCharNameInput').classList.add('hidden'); $('confirmPasswordInput').classList.add('hidden'); $('initialButtons').classList.remove('hidden'); $('registerButtons').classList.add('hidden'); $('loginError').classList.add('hidden'); }
+let regOpen = false;
+function showRegisterForm() {
+    if (!regOpen) return; $('modalSubtitle').textContent = 'Usernames: letters, numbers or underscores'; $('regCharNameInput').classList.remove('hidden'); $('confirmPasswordInput').classList.remove('hidden'); $('initialButtons').classList.add('hidden'); $('registerButtons').classList.remove('hidden'); $('loginError').classList.add('hidden'); }
+function hideRegisterForm() { $('modalSubtitle').textContent = regOpen ? 'Log in or create an account' : 'Log in with the account from your teacher'; $('regCharNameInput').classList.add('hidden'); $('confirmPasswordInput').classList.add('hidden'); $('initialButtons').classList.remove('hidden'); $('registerButtons').classList.add('hidden'); $('loginError').classList.add('hidden'); }
 async function register() {
     const u = $('usernameInput').value.trim(), n = $('regCharNameInput').value.trim(), p = $('passwordInput').value, c = $('confirmPasswordInput').value;
     if (!u || !p) return showMessage('loginError', 'Please enter a username and password.');
