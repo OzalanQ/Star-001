@@ -490,10 +490,16 @@ function toast(msg, type = 'ok') {
 async function rpc(fn, params = {}, needLogin = true) {
     if (!sb) throw new Error('This site is not connected to its database yet. Please tell your teacher.');
     if (needLogin) params = { p_token: localStorage.getItem(TOKEN_KEY) || '', ...params };
-    const { data, error } = await sb.rpc(fn, params);
+    let { data, error } = await sb.rpc(fn, params);
+    // 网络偶尔失败（iPad 上提示 "Load failed"）时自动重试两次
+    for (let i = 0; i < 2 && error && NET_ERR.test(error.message || ''); i++) {
+        await new Promise(r => setTimeout(r, 700 * (i + 1)));
+        ({ data, error } = await sb.rpc(fn, params));
+    }
     if (error) { const err = new Error(tr(error.message || 'Request failed')); if (/登录已过期/.test(error.message || '')) err.sessionExpired = true; throw err; }
     return data;
 }
+const NET_ERR = /Load failed|Failed to fetch|NetworkError|Network request failed|network connection was lost|fetch failed/i;
 // 服务器返回的中文提示 → 英文（教师端仍然是中文，所以在学生页面这里翻译）
 const HOUSE_EN = { '格兰芬多': 'Gryffindor', '斯莱特林': 'Slytherin', '拉文克劳': 'Ravenclaw', '赫奇帕奇': 'Hufflepuff' };
 const MSG_EN = [
@@ -556,6 +562,7 @@ function tr(msg) {
         if (typeof k === 'string') { if (msg === k) return v; }
         else { const m = msg.match(k); if (m) return v(m); }
     }
+    if (NET_ERR.test(msg)) return 'Cannot reach the game server. Please check your internet connection and try again. (School or public Wi-Fi may block it — try another network.)';
     if (/schema cache|PGRST202|Could not find the function/i.test(msg)) return 'The game database needs an update. Please ask your teacher to run the latest setup script.';
     if (/Failed to fetch|NetworkError|network/i.test(msg)) return 'Network error. Please check your connection and try again.';
     return msg;
