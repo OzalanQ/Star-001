@@ -70,6 +70,7 @@
         .field:focus { outline:none; border-color:var(--gold); }
         .house-gryffindor { --hc:#ae0001; --hc2:#d3a625; } .house-slytherin { --hc:#1a472a; --hc2:#aaaaaa; }
         .house-ravenclaw { --hc:#222f5b; --hc2:#946b2d; } .house-hufflepuff { --hc:#ecb939; --hc2:#372e29; }
+        .house-beauxbatons { --hc:#3b6fb6; --hc2:#c9d6ea; } .house-durmstrang { --hc:#7a1f1f; --hc2:#8a6b4a; }
         .house-badge { background:linear-gradient(135deg,var(--hc),rgba(0,0,0,.4)); border:1px solid var(--hc2); }
         /* ---------- English Grammar: dark wizards ---------- */
         .forest { position:relative; border-radius:16px; padding:28px 12px 18px; overflow:hidden;
@@ -101,6 +102,17 @@
         @keyframes vanish { 0% { transform:scale(1); opacity:1; filter:brightness(1) } 40% { transform:scale(1.08) rotate(4deg); filter:brightness(2.2) drop-shadow(0 0 30px #fde68a) } 100% { transform:scale(.9) translateY(16px) rotate(-10deg); opacity:.5; filter:grayscale(1) brightness(.6) } }
         .vanquish .seal-show { position:absolute; top:52px; left:50%; transform:translateX(-50%) rotate(-12deg); background:linear-gradient(135deg,#f4d58d,#c9a227); color:#3b2a05; font-weight:800; font-size:.8rem; letter-spacing:.14em; padding:4px 12px; border-radius:4px; box-shadow:0 2px 12px rgba(0,0,0,.6); opacity:0; animation: sealin .5s ease-out 1.9s forwards; white-space:nowrap; }
         @keyframes sealin { from { opacity:0; transform:translateX(-50%) rotate(-12deg) scale(2) } to { opacity:1; transform:translateX(-50%) rotate(-12deg) scale(1) } }
+        /* 物品插画 / 行李箱大格子（方便 iPad 点按） */
+        .art-bg { background: radial-gradient(circle at 50% 40%, rgba(230,180,80,.16), rgba(15,20,36,.9) 70%); border:1px solid rgba(230,180,80,.25); }
+        .art-card { background: radial-gradient(circle at 50% 40%, rgba(129,140,248,.25), rgba(15,20,36,.9) 70%); }
+        .inventory-slot.trunk-slot { width:140px; height:168px; padding:8px 7px; }
+        .trunk-art { width:72px; height:72px; padding:4px; display:flex; align-items:center; justify-content:center; }
+        .trunk-btns { display:flex; gap:6px; width:100%; }
+        .trunk-btns button { flex:1; min-width:0; min-height:40px; border-radius:8px; font-size:.78rem; white-space:nowrap; display:flex; align-items:center; justify-content:center; gap:4px; touch-action:manipulation; }
+        .trunk-btns button:only-child { flex:1; }
+        @media (max-width:420px) { .inventory-slot.trunk-slot { width:104px; height:156px; } .trunk-art { width:60px; height:60px; } .trunk-btns button span { display:none; } }
+        .wand-art { height:64px; padding:4px 10px; display:flex; align-items:center; justify-content:center; }
+        .wand-art svg { max-height:56px; }
         /* ================= Wizarding decorations (decoration only — no layout changes) ================= */
         :root { --foil: linear-gradient(100deg,#b8862b 0%,#f6e3a1 22%,#d4a843 40%,#fff4cf 50%,#c9952e 62%,#f2d27a 80%,#a8741f 100%); }
         body { background:
@@ -265,7 +277,7 @@
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div class="panel p-6">
                     <h3 class="panel-title text-lg mb-1"><i class="fas fa-user-shield mr-2"></i>Equipped</h3>
-                    <p class="text-xs text-gray-500 mb-3">One wand, robe, hat and accessory at a time</p>
+                    <p class="text-xs text-gray-500 mb-3">Up to 3 of each type — their stats and enchantments all add up</p>
                     <div id="equippedItems" class="space-y-2"></div>
                     <div class="mt-4 pt-3 border-t border-gray-700 text-sm space-y-1" id="statBreakdown"></div>
                 </div>
@@ -412,7 +424,7 @@
                     <h3 class="text-3xl gold font-magic">Magic Exchange</h3>
                     <button onclick="openListItemModal()" class="btn-gold py-2 px-6 rounded-lg">List an Item</button>
                 </div>
-                <p class="text-sm text-gray-400 italic mb-6">Buy and sell equipment and cards with your classmates.</p>
+                <p class="text-sm text-gray-400 italic mb-6">Trade equipment and cards with your classmates. Prices are in <span class="text-pink-300 not-italic">honour ⭐</span> — the buyer’s honour goes to the seller.</p>
                 <div id="exchangeListings" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"></div>
             </div>
         </section>
@@ -432,7 +444,7 @@
 <!-- 角色自定义 -->
 <div id="characterCustomizationModal" class="fixed inset-0 z-50 modal-overlay items-center justify-center hidden p-4"><div class="panel p-6 w-full" style="max-width:24rem"><h3 class="text-xl font-bold gold font-magic mb-4">Customise Your Character</h3><div class="space-y-4"><div><label for="customNameInput" class="block text-sm text-gray-300 mb-1">Character name</label><input type="text" id="customNameInput" maxlength="20" class="field"></div><div><label for="customAvatarUrlInput" class="block text-sm text-gray-300 mb-1">Avatar link</label><input type="url" id="customAvatarUrlInput" placeholder="http(s)://..." class="field"></div><div><label for="customAvatarFileInput" class="block text-sm text-gray-300 mb-1">Or upload a picture</label><input type="file" id="customAvatarFileInput" accept="image/*" class="w-full text-sm text-gray-400"></div><div class="flex gap-3 pt-2"><button onclick="saveCustomization()" class="flex-1 btn-crimson py-2 rounded">Save</button><button type="button" onclick="closeCustomizationModal()" class="flex-1 btn-ghost py-2 rounded">Cancel</button></div></div></div></div>
 <!-- 交易所上架 -->
-<div id="listItemModal" class="fixed inset-0 z-50 modal-overlay items-center justify-center hidden p-4"><div class="panel p-6 w-full" style="max-width:24rem"><h3 class="text-xl font-bold gold font-magic mb-4">List an Item for Sale</h3><form id="listItemForm" class="space-y-4"><div><label for="listItemSelect" class="block text-sm text-gray-300 mb-1">Choose an item</label><select id="listItemSelect" class="field" required></select><p class="text-xs text-gray-500 mt-1">Only items in your trunk can be sold. Listed items leave your trunk and come back if you remove the listing.</p></div><input type="number" id="itemPriceInput" min="1" max="100000" step="1" placeholder="Price (whole number)" class="field" required><div class="flex gap-3"><button type="submit" class="flex-1 btn-crimson py-2 rounded">List It</button><button type="button" onclick="closeListItemModal()" class="flex-1 btn-ghost py-2 rounded">Cancel</button></div></form></div></div>
+<div id="listItemModal" class="fixed inset-0 z-50 modal-overlay items-center justify-center hidden p-4"><div class="panel p-6 w-full" style="max-width:24rem"><h3 class="text-xl font-bold gold font-magic mb-4">List an Item for Sale</h3><form id="listItemForm" class="space-y-4"><div><label for="listItemSelect" class="block text-sm text-gray-300 mb-1">Choose an item</label><select id="listItemSelect" class="field" required></select><p class="text-xs text-gray-500 mt-1">Only items in your trunk can be sold. Listed items leave your trunk and come back if you remove the listing.</p></div><label for="itemPriceInput" class="block text-sm text-gray-300 mb-1">Price in <span class="text-pink-300">honour ⭐</span></label><input type="number" id="itemPriceInput" min="1" max="1000" step="1" placeholder="Honour (1–1000)" class="field" required><p class="text-xs text-gray-500 -mt-2">The buyer pays with honour, and it is added to yours.</p><div class="flex gap-3"><button type="submit" class="flex-1 btn-crimson py-2 rounded">List It</button><button type="button" onclick="closeListItemModal()" class="flex-1 btn-ghost py-2 rounded">Cancel</button></div></form></div></div>
 <!-- 任务 -->
 <div id="taskModal" class="fixed inset-0 z-50 modal-overlay items-center justify-center hidden p-4"><div class="panel p-6 w-full relative" style="max-width:42rem;max-height:90vh;overflow-y:auto"><button onclick="closeTaskModal()" class="absolute top-3 right-4 text-gray-400 hover:text-white text-2xl" title="Close">&times;</button><div id="taskModalBody"></div></div></div>
 <!-- 大图 -->
@@ -449,7 +461,7 @@
 const SUPABASE_URL = 'https://rxnaklyaiquqlmjymzkk.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_nb620Ckj_sCfdA_lE0yITg_3OSo6WQk';   // 只能填 publishable 公开密钥，绝对不要填 secret
 
-const INVENTORY_SIZE = 30, MAX_NAME_LENGTH = 20, MAX_PRICE = 100000, TOKEN_KEY = 'starwartsToken';
+const INVENTORY_SIZE = 50, MAX_NAME_LENGTH = 20, MAX_PRICE = 1000, TOKEN_KEY = 'starwartsToken';
 const configReady = !SUPABASE_URL.includes('你的项目') && !SUPABASE_KEY.includes('你的');
 // 连接数据库：优先走本站转发（/sbapi，防止 iPad 等设备的插件拦截），不可用时直接连 Supabase
 const SB_OPTS = { auth: { persistSession: false, autoRefreshToken: false } };
@@ -523,7 +535,7 @@ async function rpc(fn, params = {}, needLogin = true) {
 }
 const NET_ERR = /Load failed|Failed to fetch|NetworkError|Network request failed|network connection was lost|fetch failed/i;
 // 服务器返回的中文提示 → 英文（教师端仍然是中文，所以在学生页面这里翻译）
-const HOUSE_EN = { '格兰芬多': 'Gryffindor', '斯莱特林': 'Slytherin', '拉文克劳': 'Ravenclaw', '赫奇帕奇': 'Hufflepuff' };
+const HOUSE_EN = { '格兰芬多': 'Gryffindor', '斯莱特林': 'Slytherin', '拉文克劳': 'Ravenclaw', '赫奇帕奇': 'Hufflepuff', '布斯巴顿': 'Beauxbatons', '德姆斯特朗': 'Durmstrang' };
 const MSG_EN = [
     [/^(.+) 今天已经吃饱啦，明天再来喂吧$/, m => `${m[1]} is already full today. Come back tomorrow!`],
     ['一次可以买 1-20 份', 'You can buy 1–20 at a time.'],
@@ -606,7 +618,9 @@ const HOUSES = {
     gryffindor: { name: 'Gryffindor', icon: '🦁', motto: 'Bravery, daring, nerve and chivalry' },
     slytherin: { name: 'Slytherin', icon: '🐍', motto: 'Cunning, ambition, leadership and resourcefulness' },
     ravenclaw: { name: 'Ravenclaw', icon: '🦅', motto: 'Wisdom, creativity, learning and wit' },
-    hufflepuff: { name: 'Hufflepuff', icon: '🦡', motto: 'Loyalty, fairness, hard work and patience' }
+    hufflepuff: { name: 'Hufflepuff', icon: '🦡', motto: 'Loyalty, fairness, hard work and patience' },
+    beauxbatons: { name: 'Beauxbatons', icon: '⚜️', motto: 'Elegance, grace, artistry and poise' },
+    durmstrang: { name: 'Durmstrang', icon: '❄️', motto: 'Strength, discipline, endurance and resolve' }
 };
 const SLOTS = [['wand', 'Wand', 'fa-magic'], ['robe', 'Robe', 'fa-user-shield'], ['hat', 'Hat', 'fa-hat-wizard'], ['accessory', 'Accessory', 'fa-gem']];
 function slotName(slot) { const f = SLOTS.find(x => x[0] === slot); return f ? f[1] : 'Accessory'; }
@@ -713,7 +727,7 @@ function renderHousePanel() {
     houseRendered = gameState.house || null;
     if (!gameState.house) {
         p.innerHTML = `<div class="flex items-center gap-4 mb-4"><div class="w-14 h-14 rounded-full border-2 border-red-700 flex items-center justify-center text-2xl">🎩</div><div><h3 class="gold font-magic text-xl">The Sorting Ceremony</h3><p class="text-sm text-gray-400 italic">Choose wisely, for the hat makes no mistakes. You cannot change it yourself afterwards.</p></div></div>
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-3">${Object.entries(HOUSES).map(([k, h]) => `<button onclick="chooseHouse('${k}')" class="house-${k} house-badge rounded-lg p-4 text-center hover:opacity-90"><div class="text-3xl">${h.icon}</div><div class="font-magic text-lg mt-1">${h.name}</div><div class="text-xs opacity-80 mt-1">${h.motto}</div></button>`).join('')}</div>
+        <div class="grid grid-cols-2 md:grid-cols-3 gap-3">${Object.entries(HOUSES).map(([k, h]) => `<button onclick="chooseHouse('${k}')" class="house-${k} house-badge rounded-lg p-4 text-center hover:opacity-90"><div class="text-3xl">${h.icon}</div><div class="font-magic text-lg mt-1">${h.name}</div><div class="text-xs opacity-80 mt-1">${h.motto}</div></button>`).join('')}</div>
         <div id="houseCupCommon" class="mt-5"></div>`;
     } else {
         const h = HOUSES[gameState.house];
@@ -832,9 +846,11 @@ async function loadMyDuels() {
 // ===================== 我的箱子 =====================
 function renderEquippedItems() {
     const c = $('equippedItems'); const list = gameState.equippedItems || [];
+    const per = num(gameState.equipPerSlot) || 3;
     c.innerHTML = SLOTS.map(([key, label, icon]) => {
-        const idx = list.findIndex(it => (it.slot || 'accessory') === key), it = idx >= 0 ? list[idx] : null;
-        return `<div class="flex items-center justify-between tile p-2"><div class="flex items-center gap-2 min-w-0"><span class="text-xs text-gray-400 w-8 flex-shrink-0">${label}</span><div class="w-8 h-8 flex-shrink-0 rounded flex items-center justify-center ${it ? 'bg-red-900' : 'bg-gray-800'}">${it ? (imgTag(it.image, it.name, 'w-6 h-6 object-cover rounded') || itemIcon(it, 'text-xs')) : `<i class="fas ${icon} text-gray-600 text-xs"></i>`}</div><span class="text-sm truncate ${it ? 'text-white' : 'text-gray-500'}">${it ? `${esc(it.name)} <span class="text-xs text-gray-400">ATK ${num(it.attack)} / DEF ${num(it.defense)}</span>${it.abilityName ? `<br><span class="text-xs text-yellow-300">✨ ${esc(it.abilityName)}</span>` : ''}` : 'Empty'}</span></div>${it ? `<button onclick="unequipItem(${idx})" class="text-red-400 hover:text-red-300 px-2" title="Unequip"><i class="fas fa-times"></i></button>` : ''}</div>`;
+        const items = list.map((it, idx) => ({ it, idx })).filter(x => (x.it.slot || 'accessory') === key);
+        const row = ({ it, idx }) => `<div class="flex items-center justify-between tile p-2"><div class="flex items-center gap-2 min-w-0"><div class="w-11 h-11 flex-shrink-0 rounded-lg flex items-center justify-center art-bg">${imgTag(it.image, it.name, 'w-10 h-10 object-cover rounded') || itemArt(it, 'w-10 h-10')}</div><span class="text-sm truncate text-white">${esc(it.name)} <span class="text-xs text-gray-400">ATK ${num(it.attack)} / DEF ${num(it.defense)}</span>${it.abilityName ? `<br><span class="text-xs text-yellow-300">✨ ${esc(it.abilityName)}</span>` : ''}</span></div><button onclick="unequipItem(${idx})" class="btn-ghost text-red-300 hover:text-red-200 rounded-lg flex-shrink-0 flex items-center justify-center" style="min-width:40px;min-height:38px" title="Unequip" aria-label="Unequip"><i class="fas fa-times"></i></button></div>`;
+        return `<div class="space-y-1.5"><p class="text-xs text-gray-400 flex items-center gap-1.5"><i class="fas ${icon}"></i>${label} <span class="text-gray-500">${items.length} / ${per}</span></p>${items.map(row).join('')}${items.length ? '' : `<div class="tile p-2 text-sm text-gray-500 flex items-center gap-2"><div class="w-11 h-11 rounded-lg flex items-center justify-center art-bg opacity-60"><i class="fas ${icon} text-gray-600 text-sm"></i></div>Empty</div>`}</div>`;
     }).join('');
     const eqA = sumStat(list, 'attack'), eqD = sumStat(list, 'defense'), cA = num(gameState.totalAttack) - eqA, cD = num(gameState.totalDefense) - eqD;
     $('statBreakdown').innerHTML = `<div class="flex justify-between"><span class="text-gray-400">Equipment</span><span>ATK ${eqA} / DEF ${eqD}</span></div><div class="flex justify-between"><span class="text-gray-400">Creatures</span><span>ATK ${cA} / DEF ${cD}</span></div><div class="flex justify-between font-bold gold"><span>Total</span><span>ATK ${num(gameState.totalAttack)} / DEF ${num(gameState.totalDefense)}</span></div>${abilityLine()}`;
@@ -845,8 +861,11 @@ function renderInventory() {
     c.innerHTML = list.map((it, i) => {
         const eq = isEquipmentItem(it), name = String(it.name ?? ''), dn = name.length > 6 ? name.slice(0, 5) + '…' : name, sp = Math.floor(num(it.price) * 0.8);
         const tip = eq ? `[${slotName(it.slot)}] ${name} · ATK ${num(it.attack)} DEF ${num(it.defense)}${it.desc ? ' · ' + it.desc : ''}${it.abilityName ? ' · ✨ ' + it.abilityName + ': ' + (it.abilityDesc || '') : ''}` : name;
-        return `<div class="inventory-slot filled" title="${esc(tip)}"><div class="w-full h-full rounded flex flex-col items-center justify-between p-1 text-center">${imgTag(it.image, name, 'w-6 h-6 object-cover rounded mt-0.5') || `<span class="mt-0.5">${itemIcon(eq ? it : null, 'text-lg')}</span>`}<p class="text-white text-xxs leading-tight">${esc(dn)}</p><div class="flex gap-1">${eq ? `<button class="bg-green-700 hover:bg-green-600 text-white px-1.5 py-0.5 rounded text-xxs" onclick="equipItemFromInventory(${i})" title="Equip"><i class="fas fa-hand-sparkles"></i></button>` : ''}<button class="bg-yellow-700 hover:bg-yellow-600 text-white px-1.5 py-0.5 rounded text-xxs" onclick="sellItemFromInventory(${i})" title="Sell to the shop (${sp} gold)"><i class="fas fa-coins"></i></button></div></div></div>`;
-    }).join('') + Array.from({ length: Math.max(0, Math.min(6, INVENTORY_SIZE - list.length)) }, () => '<div class="inventory-slot"><i class="fas fa-plus text-gray-700"></i></div>').join('');
+        return `<div class="inventory-slot filled trunk-slot" title="${esc(tip)}"><div class="w-full h-full flex flex-col items-center justify-between text-center">
+            <div class="trunk-art art-bg rounded-lg">${imgTag(it.image, name, 'w-full h-full object-cover rounded-lg') || itemArt(eq ? it : { ...it, kind: 'card' }, 'w-full h-full')}</div>
+            <p class="text-white text-xs leading-tight w-full truncate px-1">${esc(name)}</p>
+            <div class="trunk-btns">${eq ? `<button class="bg-green-700 hover:bg-green-600 text-white" onclick="equipItemFromInventory(${i})" title="Equip" aria-label="Equip"><i class="fas fa-hand-sparkles"></i><span>Equip</span></button>` : ''}<button class="bg-yellow-700 hover:bg-yellow-600 text-white" onclick="sellItemFromInventory(${i})" title="Sell to the shop (${sp} gold)" aria-label="Sell"><i class="fas fa-coins"></i><span>${sp}</span></button></div></div></div>`;
+    }).join('') + Array.from({ length: Math.max(0, Math.min(6, INVENTORY_SIZE - list.length)) }, () => '<div class="inventory-slot trunk-slot"><i class="fas fa-plus text-gray-700"></i></div>').join('');
 }
 function renderMagicCardsInventory() {
     const c = $('magicCardsInventoryDisplay'), list = gameState.magicCardsInventory || [];
@@ -855,8 +874,8 @@ function renderMagicCardsInventory() {
 }
 async function equipItemFromInventory(i) {
     const it = (gameState.inventory || [])[i]; if (!it) return;
-    const cur = (gameState.equippedItems || []).find(x => (x.slot || 'accessory') === (it.slot || 'accessory'));
-    if (cur && !confirm(`Equipping ${it.name} will replace your ${slotName(it.slot).toLowerCase()} ${cur.name} (it goes back to your trunk). Continue?`)) return;
+    const per = num(gameState.equipPerSlot) || 3, same = (gameState.equippedItems || []).filter(x => (x.slot || 'accessory') === (it.slot || 'accessory')).length;
+    if (same >= per) return toast(`You can wear at most ${per} ${slotName(it.slot).toLowerCase()}s at once. Unequip one first.`, 'error');
     const d = await act('sw_equip_item', { p_index: i, p_item_id: String(it.id) }, 'Could not equip'); if (d) toast(`Equipped ${it.name}${it.abilityName ? ' · ✨ ' + it.abilityName + ' active' : ''}`);
 }
 async function unequipItem(i) { const it = (gameState.equippedItems || [])[i]; if (!it) return; await act('sw_unequip_item', { p_index: i, p_item_id: String(it.id) }, 'Could not unequip'); }
@@ -885,7 +904,7 @@ function renderAlley() {
     const eq = globalEquipmentStore.filter(e => alleyFilter === 'all' || e.slot === alleyFilter).map(e => ({ ...e, kind: 'equipment' }));
     const cards = (alleyFilter === 'all' || alleyFilter === 'card') ? globalMagicCardStore.map(c => ({ ...c, kind: 'card' })) : [];
     const items = [...eq, ...cards];
-    $('alleyGrid').innerHTML = items.length ? items.map(it => `<div class="tile p-4 flex flex-col"><div class="flex items-start gap-3"><div class="w-14 h-14 rounded-lg flex items-center justify-center flex-shrink-0 ${it.kind === 'card' ? 'bg-indigo-900' : 'bg-red-900'}">${imgTag(it.image_url, it.name, 'w-12 h-12 object-cover rounded') || `<i class="fas ${it.kind === 'card' ? 'fa-scroll' : slotIcon(it.slot)} text-yellow-300 text-xl"></i>`}</div><div class="min-w-0 flex-1"><p class="text-xs text-red-300 tracking-widest uppercase">${it.kind === 'card' ? 'Magic Card' : slotName(it.slot)}</p><h4 class="text-white font-bold">${esc(it.name)}</h4>${it.kind === 'card' ? `<p class="text-xs text-gray-400 mt-1">${esc(it.description)}</p>` : `<p class="text-xs mt-1"><span class="text-red-400">⚔ ATK +${num(it.attack)}</span>&nbsp;&nbsp;<span class="text-blue-400">🛡 DEF +${num(it.defense)}</span></p>`}</div></div><div class="flex justify-between items-center mt-4 pt-3 border-t border-gray-800"><span class="gold font-bold">${num(it.price)} <i class="fas fa-coins text-sm"></i></span><button onclick="buyProduct(${num(it.id)}, '${it.kind}')" class="btn-crimson px-4 py-1 rounded text-sm" ${num(gameState.playerGold) < num(it.price) ? 'disabled title="Not enough gold"' : ''}>Buy</button></div></div>`).join('')
+    $('alleyGrid').innerHTML = items.length ? items.map(it => `<div class="tile p-4 flex flex-col"><div class="flex items-start gap-3"><div class="w-20 h-20 rounded-xl flex items-center justify-center flex-shrink-0 art-bg ${it.kind === 'card' ? 'art-card' : ''} p-1.5">${imgTag(it.image_url, it.name, 'w-full h-full object-cover rounded-lg') || itemArt(it, 'w-full h-full')}</div><div class="min-w-0 flex-1"><p class="text-xs text-red-300 tracking-widest uppercase">${it.kind === 'card' ? 'Magic Card' : slotName(it.slot)}</p><h4 class="text-white font-bold">${esc(it.name)}</h4>${it.kind === 'card' ? `<p class="text-xs text-gray-400 mt-1">${esc(it.description)}</p>` : `<p class="text-xs mt-1"><span class="text-red-400">⚔ ATK +${num(it.attack)}</span>&nbsp;&nbsp;<span class="text-blue-400">🛡 DEF +${num(it.defense)}</span></p>`}</div></div><div class="flex justify-between items-center mt-4 pt-3 border-t border-gray-800"><span class="gold font-bold">${num(it.price)} <i class="fas fa-coins text-sm"></i></span><button onclick="buyProduct(${num(it.id)}, '${it.kind}')" class="btn-crimson px-4 py-1 rounded text-sm" ${num(gameState.playerGold) < num(it.price) ? 'disabled title="Not enough gold"' : ''}>Buy</button></div></div>`).join('')
         : '<p class="text-gray-500 italic col-span-full text-center">Nothing in this category yet.</p>';
 }
 async function buyProduct(id, kind) {
@@ -916,7 +935,8 @@ function wandSvg(hex, finish, ability) {
 function renderWand() {
     if (!wandCfg || !wandCfg.colors || !$('wandSteps')) return;
     const step = (n, title, inner) => `<div><h4 class="font-bold mb-2"><span class="btn-crimson text-xs rounded-full px-2 py-0.5 mr-2">${n}</span>${title}</h4>${inner}</div>`;
-    const cards = (key, list, statFn) => `<div class="grid grid-cols-2 md:grid-cols-4 gap-2">${list.map(o => `<div onclick="wandSel.${key}='${o.id}';renderWand()" class="choice p-3 ${wandSel[key] === o.id ? 'selected' : ''}"><div class="flex justify-between gap-1"><span class="font-bold text-white text-sm">${esc(o.name)}</span><span class="gold text-xs">${num(o.cost) ? num(o.cost) + 'g' : 'free'}</span></div><p class="text-xs text-gray-400 mt-1">${esc(o.desc || '')}</p><p class="text-xs mt-1">${statFn(o)}</p></div>`).join('')}</div>`;
+    const artFor = { wood: WAND_ART.wood, core: WAND_ART.core, finish: WAND_ART.finish, ability: WAND_ART.ability };
+    const cards = (key, list, statFn) => `<div class="grid grid-cols-2 md:grid-cols-4 gap-2">${list.map(o => `<div onclick="wandSel.${key}='${o.id}';renderWand()" class="choice p-3 ${wandSel[key] === o.id ? 'selected' : ''}">${artFor[key] ? `<div class="wand-art art-bg rounded-lg mb-2">${artFor[key](o.id)}</div>` : ''}<div class="flex justify-between gap-1"><span class="font-bold text-white text-sm">${esc(o.name)}</span><span class="gold text-xs">${num(o.cost) ? num(o.cost) + 'g' : 'free'}</span></div><p class="text-xs text-gray-400 mt-1">${esc(o.desc || '')}</p><p class="text-xs mt-1">${statFn(o)}</p></div>`).join('')}</div>`;
     const swatches = `<div class="flex flex-wrap gap-3">${wandCfg.colors.map(c => `<button onclick="wandSel.color='${c.id}';renderWand()" class="choice px-3 py-2 flex items-center gap-2 ${wandSel.color === c.id ? 'selected' : ''}"><span class="w-6 h-6 rounded-full border border-gray-500" style="background:${safeColor(c.hex)}"></span><span class="text-sm">${esc(c.name)}</span><span class="gold text-xs">${num(c.cost) ? num(c.cost) + 'g' : 'free'}</span></button>`).join('')}</div>`;
     const stat = (o) => [num(o.attack) ? `<span class="text-red-400">ATK +${num(o.attack)}</span>` : '', num(o.defense) ? `<span class="text-blue-400">DEF +${num(o.defense)}</span>` : ''].filter(Boolean).join(' ') || '<span class="text-gray-500">—</span>';
     const prevName = ($('wandName') || {}).value || '';
@@ -948,8 +968,10 @@ async function craftWand() {
     if (d) { toast(`✨ ${d.item.name} has chosen you! It's waiting in your trunk.`); $('wandName').value = ''; }
 }
 function abilityLine() {
-    const w = (gameState.equippedItems || []).find(x => x.slot === 'wand' && x.abilityName);
-    return w ? `<div class="text-xs text-yellow-300 mt-1">✨ ${esc(w.abilityName)}: ${esc(w.abilityDesc || '')}</div>` : '';
+    const ws = (gameState.equippedItems || []).filter(x => x.slot === 'wand' && x.abilityName);
+    if (!ws.length) return '';
+    const byName = {}; ws.forEach(w => { (byName[w.abilityName] = byName[w.abilityName] || { n: 0, d: w.abilityDesc || '' }).n++; });
+    return Object.entries(byName).map(([n, o]) => `<div class="text-xs text-yellow-300 mt-1">✨ ${esc(n)}${o.n > 1 ? ` ×${o.n}` : ''}: ${esc(o.d)}</div>`).join('');
 }
 
 // ===================== 决斗俱乐部 =====================
@@ -1334,6 +1356,360 @@ function showGrammarVictory(first) {
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
+// ===================== 原创物品插画（SVG，用于商店 / 行李箱 / 魔杖工坊） =====================
+let artSeq = 0;
+function svgWrap(inner, cls) { return `<svg viewBox="0 0 64 64" class="${cls || 'w-full h-full'}" aria-hidden="true">${inner}</svg>`; }
+function gid() { return 'ag' + (++artSeq); }
+function lg(id, a, b, x2 = 0, y2 = 1) { return `<linearGradient id="${id}" x1="0" y1="0" x2="${x2}" y2="${y2}"><stop offset="0" stop-color="${a}"/><stop offset="1" stop-color="${b}"/></linearGradient>`; }
+function rg(id, a, b) { return `<radialGradient id="${id}" cx="35%" cy="30%" r="75%"><stop offset="0" stop-color="${a}"/><stop offset="1" stop-color="${b}"/></radialGradient>`; }
+function sparkle(x, y, s = 3, c = '#fde68a') { return `<path d="M${x} ${y - s}L${x + s * .3} ${y - s * .3}L${x + s} ${y}L${x + s * .3} ${y + s * .3}L${x} ${y + s}L${x - s * .3} ${y + s * .3}L${x - s} ${y}L${x - s * .3} ${y - s * .3}Z" fill="${c}"/>`; }
+
+const ITEM_ART = {
+    wand(color) {
+        const g = gid(), c = color || '#8b5a2b';
+        return `<defs>${lg(g, c, '#1f140a', 1, 1)}</defs>
+          <path d="M12 54 L50 14 L53 17 L15 57 Z" fill="url(#${g})" stroke="#0005" stroke-width=".8"/>
+          <path d="M9 51 C8 54 10 58 13 58 L22 49 L17 44 Z" fill="${c}" stroke="#0007" stroke-width="1"/>
+          <path d="M14 47 l4 4 M17 44 l4 4" stroke="#f6e3a1" stroke-width="1.2" opacity=".7"/>
+          <circle cx="52" cy="15" r="5" fill="#fde68a" opacity=".35"/>${sparkle(52, 15, 4)}${sparkle(44, 8, 2, '#fff')}${sparkle(58, 24, 1.6, '#fff')}`;
+    },
+    elder() {
+        const g = gid();
+        return `<defs>${lg(g, '#b9b2a6', '#5b554c', 1, 1)}</defs>
+          <path d="M12 54 L50 14 L53 17 L15 57 Z" fill="url(#${g})" stroke="#0006" stroke-width=".8"/>
+          ${[[22, 44], [30, 36], [38, 28], [45, 21]].map(([x, y]) => `<ellipse cx="${x}" cy="${y}" rx="3.2" ry="2.2" transform="rotate(-45 ${x} ${y})" fill="#8d8579" stroke="#0006" stroke-width=".6"/>`).join('')}
+          <path d="M9 51 C8 54 10 58 13 58 L20 51 L16 47 Z" fill="#7a7266" stroke="#0007"/>
+          <circle cx="52" cy="15" r="6" fill="#c4b5fd" opacity=".35"/>${sparkle(52, 15, 4.5, '#e9d5ff')}`;
+    },
+    robe(main = '#1f2433', trim = '#b91c1c', trim2 = '#e6b450') {
+        const g = gid();
+        return `<defs>${lg(g, main, '#05070d')}</defs>
+          <path d="M22 8 L32 14 L42 8 L52 16 L58 32 L50 34 L48 26 L50 58 L14 58 L16 26 L14 34 L6 32 L12 16 Z" fill="url(#${g})" stroke="#000a" stroke-width="1"/>
+          <path d="M22 8 L32 30 L42 8" fill="none" stroke="${trim}" stroke-width="2.5"/><path d="M22 8 L32 30 L42 8" fill="none" stroke="${trim2}" stroke-width=".8"/>
+          <path d="M32 30 L32 58" stroke="#000" stroke-width="1" opacity=".5"/>
+          <path d="M38 36 h7 v6 c0 3-3.5 4.5-3.5 4.5 s-3.5-1.5-3.5-4.5z" fill="${trim}" stroke="${trim2}" stroke-width=".8"/>
+          <path d="M14 56 L50 56" stroke="${trim2}" stroke-width="1" opacity=".6"/>`;
+    },
+    cloak(main = '#6b5a45', dark = '#2e261d') {
+        const g = gid();
+        return `<defs>${lg(g, main, dark)}</defs>
+          <path d="M32 5 C22 5 18 14 19 22 L10 58 L54 58 L45 22 C46 14 42 5 32 5 Z" fill="url(#${g})" stroke="#000a"/>
+          <path d="M24 22 C25 13 39 13 40 22 C38 26 26 26 24 22 Z" fill="#0b0805" opacity=".85"/>
+          <path d="M20 28 C26 34 38 34 44 28" fill="none" stroke="#0006" stroke-width="1.5"/>
+          <circle cx="32" cy="29" r="3" fill="#e6b450" stroke="#7a5512"/>
+          <path d="M18 40 L16 58 M26 34 L24 58 M38 34 L40 58 M46 40 L48 58" stroke="#0004" stroke-width="1.2"/>`;
+    },
+    invisibility() {
+        const g = gid();
+        return `<defs><linearGradient id="${g}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#e5e7eb" stop-opacity=".85"/><stop offset=".5" stop-color="#93c5fd" stop-opacity=".45"/><stop offset="1" stop-color="#c4b5fd" stop-opacity=".15"/></linearGradient></defs>
+          <path d="M8 14 C20 6 44 6 56 14 C54 30 58 44 52 58 C40 52 24 60 12 56 C6 42 10 28 8 14 Z" fill="url(#${g})" stroke="#e5e7eb" stroke-opacity=".6"/>
+          <path d="M14 20 C24 26 40 16 50 22 M12 34 C24 40 40 30 52 36 M14 48 C26 52 38 44 50 50" fill="none" stroke="#fff" stroke-opacity=".45" stroke-width="1"/>
+          ${sparkle(20, 16, 2.5, '#fff')}${sparkle(46, 30, 2, '#dbeafe')}${sparkle(30, 46, 1.8, '#fff')}${sparkle(52, 52, 1.5, '#e9d5ff')}`;
+    },
+    dragonRobe() {
+        const g = gid();
+        return ITEM_ART.robe('#14532d', '#a16207', '#facc15') + `<defs><pattern id="${g}" width="6" height="5" patternUnits="userSpaceOnUse"><path d="M0 5 Q3 0 6 5" fill="none" stroke="#4ade80" stroke-opacity=".35" stroke-width=".8"/></pattern></defs>
+          <path d="M14 34 L50 34 L50 58 L14 58 Z" fill="url(#${g})"/>`;
+    },
+    silverRobe() {
+        return ITEM_ART.robe('#1e3a8a', '#cbd5e1', '#f8fafc') + sparkle(20, 40, 2, '#e2e8f0') + sparkle(26, 50, 1.5, '#e2e8f0') + sparkle(44, 52, 1.8, '#e2e8f0') + sparkle(18, 22, 1.4, '#fff');
+    },
+    hat(main = '#4c1d95', band = '#e6b450', stars = false) {
+        const g = gid();
+        return `<defs>${lg(g, main, '#0b0618', 1, 1)}</defs>
+          <ellipse cx="32" cy="52" rx="27" ry="7" fill="${main}" stroke="#000a"/>
+          <path d="M14 50 C20 36 26 22 30 6 C33 10 40 14 44 20 C40 22 38 24 39 28 C42 36 46 44 50 50 Z" fill="url(#${g})" stroke="#000a"/>
+          <path d="M15 47 C26 51 40 51 49 47 L50 50 C40 54 25 54 14 50 Z" fill="${band}"/>
+          <rect x="29" y="45.5" width="6" height="6" rx="1" fill="none" stroke="#7a5512" stroke-width="1.2"/>
+          ${stars ? sparkle(26, 30, 2.4) + sparkle(34, 20, 1.8, '#fff') + sparkle(38, 38, 2) + `<path d="M22 40 a4 4 0 1 0 5 -5 a3 3 0 1 1 -5 5z" fill="#fde68a"/>` : ''}`;
+    },
+    oldHat() {
+        const g = gid();
+        return `<defs>${lg(g, '#8b6b45', '#3b2a17', 1, 1)}</defs>
+          <ellipse cx="32" cy="53" rx="27" ry="6.5" fill="#5c452b" stroke="#000a"/>
+          <path d="M13 51 C18 40 22 30 27 22 C24 18 26 12 31 6 C33 12 37 14 40 18 C38 22 40 26 44 30 C46 38 48 44 51 51 Z" fill="url(#${g})" stroke="#000a"/>
+          <path d="M22 36 C28 33 36 33 44 36 M26 26 C30 24 35 24 39 26" fill="none" stroke="#2a1d0f" stroke-width="1.6" opacity=".8"/>
+          <path d="M34 40 l6 2 l-1 5 l-6-1z" fill="#a0825c" stroke="#2a1d0f" stroke-width=".6"/>
+          <path d="M33 40 l1 1 M36 41 l0 1.5 M38.5 42 l-.5 1.5" stroke="#1a1209" stroke-width=".6"/>`;
+    },
+    helmet() {
+        const g = gid();
+        return `<defs>${rg(g, '#b4875a', '#4a2e16')}</defs>
+          <path d="M10 38 C10 18 22 8 34 8 C48 8 56 20 56 36 L50 40 L16 42 Z" fill="url(#${g})" stroke="#000a"/>
+          <path d="M33 8 L33 40 M20 12 C24 22 24 32 22 41 M46 12 C42 22 42 32 44 40" stroke="#2a180a" stroke-width="1.2" fill="none"/>
+          <path d="M12 38 C8 44 10 52 16 54 L20 42 Z M54 36 C58 42 56 50 50 52 L46 40 Z" fill="#5a3a1c" stroke="#000a"/>
+          <path d="M16 54 C24 60 42 60 50 52" fill="none" stroke="#2a180a" stroke-width="2"/>
+          <circle cx="24" cy="30" r="5" fill="#93c5fd" fill-opacity=".5" stroke="#d6d3d1" stroke-width="1.5"/><circle cx="40" cy="30" r="5" fill="#93c5fd" fill-opacity=".5" stroke="#d6d3d1" stroke-width="1.5"/>`;
+    },
+    diadem() {
+        const g = gid(), g2 = gid();
+        return `<defs>${lg(g, '#f1f5f9', '#64748b')}${rg(g2, '#bfdbfe', '#1d4ed8')}</defs>
+          <path d="M6 44 C18 52 46 52 58 44 L56 40 C44 47 20 47 8 40 Z" fill="url(#${g})" stroke="#334155"/>
+          <path d="M10 41 L14 30 L20 39 L26 22 L32 34 L38 22 L44 39 L50 30 L54 41" fill="none" stroke="url(#${g})" stroke-width="3" stroke-linejoin="round"/>
+          <path d="M32 16 l6 9 l-6 9 l-6-9z" fill="url(#${g2})" stroke="#e2e8f0"/>
+          <circle cx="20" cy="43" r="2" fill="#93c5fd"/><circle cx="44" cy="43" r="2" fill="#93c5fd"/>${sparkle(36, 18, 2, '#fff')}`;
+    },
+    orb(smoke = '#dc2626') {
+        const g = gid();
+        return `<defs>${rg(g, '#ffffff', '#cbd5e1')}</defs>
+          <ellipse cx="32" cy="58" rx="14" ry="3" fill="#000" opacity=".35"/>
+          <circle cx="32" cy="32" r="22" fill="url(#${g})" fill-opacity=".35" stroke="#e2e8f0" stroke-width="1.5"/>
+          <path d="M20 38 C24 26 34 40 38 30 C41 22 48 30 44 38 C40 46 26 48 20 38 Z" fill="${smoke}" opacity=".85"/>
+          <path d="M24 36 C28 30 33 38 37 32" fill="none" stroke="#fecaca" stroke-width="1.2" opacity=".8"/>
+          <ellipse cx="24" cy="21" rx="6" ry="3.5" transform="rotate(-30 24 21)" fill="#fff" opacity=".8"/>`;
+    },
+    sneakoscope() {
+        const g = gid();
+        return `<defs>${rg(g, '#f0f9ff', '#7dd3fc')}</defs>
+          <path d="M22 56 L42 56 L36 50 L28 50 Z" fill="#a16207" stroke="#000a"/>
+          <path d="M32 50 L18 30 C18 18 46 18 46 30 Z" fill="url(#${g})" fill-opacity=".6" stroke="#e0f2fe"/>
+          <ellipse cx="32" cy="27" rx="14" ry="5" fill="none" stroke="#e6b450" stroke-width="1.5"/>
+          <path d="M32 6 L32 18" stroke="#e6b450" stroke-width="2"/><circle cx="32" cy="6" r="2.5" fill="#e6b450"/>
+          <circle cx="32" cy="34" r="4" fill="#fde68a"/><circle cx="32" cy="34" r="8" fill="#fde68a" opacity=".3"/>`;
+    },
+    snitch() {
+        const g = gid();
+        return `<defs>${rg(g, '#fff3c4', '#b7791f')}</defs>
+          <path d="M26 32 C18 22 8 20 2 22 C8 26 10 30 9 34 C14 32 20 34 26 34 Z" fill="#f8fafc" fill-opacity=".85" stroke="#cbd5e1" stroke-width=".7"/>
+          <path d="M38 32 C46 22 56 20 62 22 C56 26 54 30 55 34 C50 32 44 34 38 34 Z" fill="#f8fafc" fill-opacity=".85" stroke="#cbd5e1" stroke-width=".7"/>
+          <path d="M6 24 C12 25 18 28 24 32 M58 24 C52 25 46 28 40 32" stroke="#94a3b8" stroke-width=".6" fill="none"/>
+          <circle cx="32" cy="33" r="9" fill="url(#${g})" stroke="#7a5512"/>
+          <path d="M23.5 33 h17 M32 24 v18" stroke="#7a5512" stroke-width=".7" opacity=".7"/>${sparkle(28, 29, 1.8, '#fff')}`;
+    },
+    broom() {
+        return `<path d="M52 8 L22 44" stroke="#7c4a1e" stroke-width="4" stroke-linecap="round"/><path d="M52 8 L22 44" stroke="#b07a45" stroke-width="1.4" stroke-linecap="round"/>
+          <path d="M22 40 L28 46 L12 62 C6 60 4 58 2 52 Z" fill="#c8a065" stroke="#6b4a1f"/>
+          <path d="M20 46 L6 56 M23 47 L10 60 M18 44 L4 52" stroke="#8b6a35" stroke-width="1"/>
+          <path d="M21 41 l6 6" stroke="#b91c1c" stroke-width="2.5"/>${sparkle(56, 6, 2)}`;
+    },
+    timeTurner() {
+        const g = gid();
+        return `<defs>${lg(g, '#fde68a', '#a16207')}</defs>
+          <path d="M32 2 C30 6 34 8 32 12" stroke="#e6b450" stroke-width="1.5" fill="none"/>
+          <circle cx="32" cy="36" r="20" fill="none" stroke="url(#${g})" stroke-width="3"/>
+          <ellipse cx="32" cy="36" rx="20" ry="7" fill="none" stroke="url(#${g})" stroke-width="2"/>
+          <path d="M25 24 L39 24 L33 36 L39 48 L25 48 L31 36 Z" fill="#e0f2fe" fill-opacity=".55" stroke="#e6b450" stroke-width="1.2"/>
+          <path d="M27 46 L37 46 L33 40 L31 40 Z" fill="#fbbf24"/><path d="M28 26 L36 26 L33 31 L31 31 Z" fill="#fbbf24" opacity=".7"/>
+          <circle cx="32" cy="16" r="2.5" fill="#e6b450"/>`;
+    },
+    potion(c = '#a855f7') {
+        return `<path d="M26 8 h12 v4 h-2 v10 C46 26 50 34 50 42 C50 52 42 58 32 58 C22 58 14 52 14 42 C14 34 18 26 28 22 V12 h-2 Z" fill="#e0f2fe" fill-opacity=".25" stroke="#e2e8f0"/>
+          <path d="M16 40 C22 36 42 36 48 40 C48 52 40 56 32 56 C24 56 16 52 16 40 Z" fill="${c}" opacity=".85"/>
+          <rect x="25" y="5" width="14" height="5" rx="1.5" fill="#92400e"/>
+          <circle cx="26" cy="46" r="2" fill="#fff" opacity=".6"/><circle cx="36" cy="50" r="1.4" fill="#fff" opacity=".5"/>`;
+    },
+    book() {
+        return `<path d="M10 14 L32 18 L54 14 L54 52 L32 56 L10 52 Z" fill="#7f1d1d" stroke="#000a"/>
+          <path d="M32 18 L32 56" stroke="#000" stroke-width="1.5" opacity=".6"/>
+          <path d="M14 18 L30 21 L30 52 L14 49 Z M50 18 L34 21 L34 52 L50 49 Z" fill="#f5e6c4"/>
+          <path d="M17 26 L27 28 M17 31 L27 33 M37 28 L47 26 M37 33 L47 31" stroke="#a8916b" stroke-width="1"/>
+          <circle cx="42" cy="42" r="3" fill="#e6b450"/>`;
+    },
+    owl() {
+        return `<ellipse cx="32" cy="38" rx="16" ry="20" fill="#e7e5e4" stroke="#78716c"/>
+          <path d="M18 24 L22 14 L28 22 M46 24 L42 14 L36 22" fill="#e7e5e4" stroke="#78716c"/>
+          <circle cx="26" cy="30" r="6" fill="#fff" stroke="#a8a29e"/><circle cx="38" cy="30" r="6" fill="#fff" stroke="#a8a29e"/>
+          <circle cx="26" cy="30" r="3" fill="#f59e0b"/><circle cx="38" cy="30" r="3" fill="#f59e0b"/><circle cx="26" cy="30" r="1.4" fill="#000"/><circle cx="38" cy="30" r="1.4" fill="#000"/>
+          <path d="M30 36 L32 40 L34 36 Z" fill="#a16207"/><path d="M24 46 l2 2 M30 48 l2 2 M36 46 l2 2" stroke="#a8a29e" stroke-width="1.2"/>`;
+    },
+    scarf() {
+        return `<path d="M14 12 C26 20 38 20 50 12 L52 20 C40 28 24 28 12 20 Z" fill="#b91c1c" stroke="#000a"/>
+          <path d="M38 22 L46 58 L36 58 L30 24 Z" fill="#b91c1c" stroke="#000a"/>
+          <path d="M33 32 L41 31 M34.5 40 L43 39 M36 48 L44.5 47" stroke="#e6b450" stroke-width="3"/>
+          <path d="M36 58 l1 4 M39 58 l0 4 M42 58 l0 4 M45 58 l1 4" stroke="#e6b450" stroke-width="1.2"/>`;
+    },
+    glasses() {
+        return `<circle cx="20" cy="34" r="11" fill="#bfdbfe" fill-opacity=".25" stroke="#e6b450" stroke-width="2.5"/><circle cx="44" cy="34" r="11" fill="#bfdbfe" fill-opacity=".25" stroke="#e6b450" stroke-width="2.5"/>
+          <path d="M31 33 C32 30 32 30 33 33" stroke="#e6b450" stroke-width="2.5" fill="none"/><path d="M9 32 L2 28 M55 32 L62 28" stroke="#e6b450" stroke-width="2"/>
+          <path d="M14 28 L18 26" stroke="#fff" stroke-width="1.5" opacity=".7"/>`;
+    },
+    amulet(c = '#10b981') {
+        const g = gid();
+        return `<defs>${rg(g, '#a7f3d0', c)}</defs>
+          <path d="M14 6 C18 24 26 30 32 32 C38 30 46 24 50 6" fill="none" stroke="#e6b450" stroke-width="1.6" stroke-dasharray="2 1.5"/>
+          <path d="M32 28 L44 40 L32 58 L20 40 Z" fill="#e6b450" stroke="#7a5512"/><path d="M32 33 L40 41 L32 52 L24 41 Z" fill="url(#${g})"/>${sparkle(29, 38, 1.6, '#fff')}`;
+    },
+    ring() {
+        return `<ellipse cx="32" cy="40" rx="16" ry="14" fill="none" stroke="#e6b450" stroke-width="5"/><ellipse cx="32" cy="40" rx="16" ry="14" fill="none" stroke="#fff3c4" stroke-width="1" opacity=".6"/>
+          <path d="M26 24 L32 14 L38 24 L32 30 Z" fill="#1f2937" stroke="#9ca3af"/>${sparkle(34, 18, 1.5, '#fff')}`;
+    },
+    quill() {
+        return `<path d="M50 6 C34 10 22 26 18 46 L22 46 C30 30 40 20 50 6 Z" fill="#f8fafc" stroke="#94a3b8"/>
+          <path d="M50 6 C42 16 30 30 20 46" stroke="#64748b" stroke-width="1"/><path d="M18 46 L12 58 L22 48 Z" fill="#1f2937"/>
+          <path d="M8 58 h18" stroke="#1e3a8a" stroke-width="2" stroke-linecap="round" opacity=".8"/>`;
+    },
+    map() {
+        return `<path d="M8 14 L22 10 L36 14 L50 10 L56 12 L56 52 L42 56 L28 52 L14 56 L8 54 Z" fill="#f5e6c4" stroke="#8b6a35"/>
+          <path d="M22 10 L22 52 M36 14 L36 56 M50 10 L50 52" stroke="#c9ab7a" stroke-width="1"/>
+          <path d="M14 40 C20 30 26 44 32 34 S44 24 50 30" fill="none" stroke="#7f1d1d" stroke-width="1.4" stroke-dasharray="2 2"/>
+          <path d="M16 46 l2 -1 M18 44 l1 -2" stroke="#3b2a17" stroke-width="1.2"/><path d="M44 22 l3 3 m0 -3 l-3 3" stroke="#b91c1c" stroke-width="1.6"/>`;
+    },
+    lantern() {
+        return `<path d="M32 4 C26 4 26 10 32 10 C38 10 38 4 32 4" fill="none" stroke="#a16207" stroke-width="1.5"/>
+          <path d="M22 12 h20 l-2 6 h-16 z M22 50 h20 l2 6 h-24 z" fill="#78350f" stroke="#000a"/>
+          <rect x="24" y="18" width="16" height="32" fill="#fde68a" fill-opacity=".35" stroke="#a16207" stroke-width="1.5"/>
+          <path d="M32 26 C28 32 30 38 32 40 C34 38 36 32 32 26 Z" fill="#f59e0b"/><circle cx="32" cy="36" r="10" fill="#fde68a" opacity=".2"/>`;
+    },
+    sword() {
+        return `<path d="M50 6 L56 8 L24 40 L22 38 Z" fill="#e5e7eb" stroke="#64748b"/><path d="M50 6 L23 39" stroke="#fff" stroke-width=".8" opacity=".7"/>
+          <path d="M16 34 L28 46" stroke="#e6b450" stroke-width="4" stroke-linecap="round"/><path d="M22 40 L12 50" stroke="#7c2d12" stroke-width="4" stroke-linecap="round"/>
+          <circle cx="10" cy="52" r="3.5" fill="#e6b450"/><circle cx="22" cy="40" r="1.8" fill="#b91c1c"/>`;
+    },
+    shieldItem() {
+        const g = gid();
+        return `<defs>${lg(g, '#b91c1c', '#450a0a')}</defs><path d="M32 6 L54 14 C54 34 46 50 32 58 C18 50 10 34 10 14 Z" fill="url(#${g})" stroke="#e6b450" stroke-width="2"/>
+          <path d="M32 16 L44 21 C44 34 39 44 32 49 C25 44 20 34 20 21 Z" fill="none" stroke="#e6b450" stroke-width="1.2" opacity=".7"/>${sparkle(32, 32, 4)}`;
+    },
+    boots() {
+        return `<path d="M14 10 h14 v30 l14 6 c4 2 6 6 6 10 h-34 z" fill="#5b3a1e" stroke="#000a"/><path d="M14 18 h14" stroke="#e6b450" stroke-width="2"/><path d="M14 54 h34" stroke="#2a180a" stroke-width="3"/>`;
+    },
+    egg() {
+        const g = gid();
+        return `<defs>${rg(g, '#fde68a', '#b45309')}</defs><ellipse cx="32" cy="58" rx="12" ry="3" fill="#000" opacity=".35"/>
+          <path d="M32 6 C44 6 50 26 50 38 C50 50 42 56 32 56 C22 56 14 50 14 38 C14 26 20 6 32 6 Z" fill="url(#${g})" stroke="#7c2d12"/>
+          <path d="M20 26 l4 3 M38 18 l4 2 M40 40 l5 2 M24 44 l3 4" stroke="#7c2d12" stroke-width="1.4"/>`;
+    },
+    goblet() {
+        return `<path d="M18 8 h28 c0 14 -6 22 -14 24 c-8 -2 -14 -10 -14 -24 z" fill="#e6b450" stroke="#7a5512"/><path d="M30 32 h4 v14 h-4 z" fill="#c9952e"/><path d="M20 52 c4 -6 20 -6 24 0 z" fill="#e6b450" stroke="#7a5512"/>
+          <path d="M22 12 c2 8 6 14 10 16" stroke="#fff3c4" stroke-width="1.2" fill="none" opacity=".7"/><path d="M24 10 C28 4 36 4 40 10" fill="#3b82f6" opacity=".7"/>`;
+    },
+    card() {
+        const g = gid();
+        return `<defs>${lg(g, '#312e81', '#1e1b4b', 1, 1)}</defs>
+          <rect x="14" y="6" width="36" height="52" rx="4" fill="url(#${g})" stroke="#e6b450" stroke-width="1.5"/>
+          <rect x="18" y="10" width="28" height="44" rx="2" fill="none" stroke="#e6b450" stroke-width=".7" opacity=".7"/>
+          <circle cx="32" cy="30" r="9" fill="none" stroke="#fde68a" stroke-width="1.2"/>${sparkle(32, 30, 6)}
+          <circle cx="32" cy="48" r="3.5" fill="#b91c1c"/>`;
+    },
+    gem() { return ITEM_ART.amulet('#8b5cf6'); }
+};
+
+// 根据物品名称（中英文关键词）和栏位挑选插画
+const ART_RULES = [
+    [/elder|老魔杖|接骨木/i, () => ITEM_ART.elder()],
+    [/invisib|隐形|隐身/i, () => ITEM_ART.invisibility()],
+    [/dragon[- ]?hide|龙皮/i, () => ITEM_ART.dragonRobe()],
+    [/silver|银/i, (it) => it && it.slot === 'robe' ? ITEM_ART.silverRobe() : null],
+    [/sorting|分院/i, () => ITEM_ART.oldHat()],
+    [/helmet|\bhelm\b|头盔/i, () => ITEM_ART.helmet()],
+    [/diadem|tiara|crown|circlet|冠/i, () => ITEM_ART.diadem()],
+    [/star|moon|星|月/i, (it) => it && it.slot === 'hat' ? ITEM_ART.hat('#1e1b4b', '#e6b450', true) : null],
+    [/remembrall|记忆球/i, () => ITEM_ART.orb('#dc2626')],
+    [/crystal ball|水晶球/i, () => ITEM_ART.orb('#8b5cf6')],
+    [/sneakoscope|窥镜|测奸/i, () => ITEM_ART.sneakoscope()],
+    [/snitch|飞贼/i, () => ITEM_ART.snitch()],
+    [/broom|扫帚/i, () => ITEM_ART.broom()],
+    [/time[- ]?turner|时间转换|时光/i, () => ITEM_ART.timeTurner()],
+    [/potion|elixir|felix|vial|药/i, () => ITEM_ART.potion('#f97316')],
+    [/book|书/i, () => ITEM_ART.book()],
+    [/owl|猫头鹰/i, () => ITEM_ART.owl()],
+    [/scarf|围巾/i, () => ITEM_ART.scarf()],
+    [/glasses|spectacles|眼镜/i, () => ITEM_ART.glasses()],
+    [/ring|戒指/i, () => ITEM_ART.ring()],
+    [/amulet|necklace|locket|pendant|项链|护身符|挂坠/i, () => ITEM_ART.amulet()],
+    [/quill|羽毛笔/i, () => ITEM_ART.quill()],
+    [/map|地图/i, () => ITEM_ART.map()],
+    [/lantern|lamp|灯/i, () => ITEM_ART.lantern()],
+    [/sword|剑/i, () => ITEM_ART.sword()],
+    [/shield|盾/i, () => ITEM_ART.shieldItem()],
+    [/boot|靴/i, () => ITEM_ART.boots()],
+    [/egg|蛋/i, () => ITEM_ART.egg()],
+    [/goblet|cup|杯/i, () => ITEM_ART.goblet()],
+    [/cloak|cape|斗篷/i, () => ITEM_ART.cloak()],
+    [/glove|手套/i, () => ITEM_ART.boots()],
+    [/wizard hat|pointed|尖顶|巫师帽/i, () => ITEM_ART.hat()]
+];
+function wandWoodColor(name) {
+    const map = [[/holly|冬青/i, '#d8c9a3'], [/ash|白蜡/i, '#c9b99a'], [/oak|橡/i, '#9c7246'], [/yew|紫杉/i, '#b85f33'], [/walnut|胡桃/i, '#6e482c'],
+        [/cherry|樱桃/i, '#a84a37'], [/hawthorn|山楂/i, '#93573a'], [/vine|葡萄/i, '#857043'], [/willow|柳/i, '#b0a070'], [/ebony|乌木|黑/i, '#2f2a28']];
+    for (const [re, c] of map) if (re.test(name)) return c;
+    const pal = ['#8b5a2b', '#6e482c', '#a0603e', '#7c5c3b', '#5b4636']; let h = 0; for (const ch of name) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+    return pal[h % pal.length];
+}
+function itemArt(it, cls) {
+    const name = String((it && it.name) || ''), slot = it && it.slot;
+    if (it && (it.kind === 'card' || it.product_type === 'card')) return svgWrap(ITEM_ART.card(), cls);
+    if (slot === 'wand' || /wand|魔杖|杖/i.test(name)) return svgWrap(/elder|老魔杖|接骨木/i.test(name) ? ITEM_ART.elder() : ITEM_ART.wand(safeColor(it && it.color) || wandWoodColor(name)), cls);
+    for (const [re, fn] of ART_RULES) { if (re.test(name)) { const r = fn(it); if (r) return svgWrap(r, cls); } }
+    const bySlot = { robe: () => ITEM_ART.robe(), hat: () => ITEM_ART.hat(), accessory: () => ITEM_ART.gem() }[slot];
+    return svgWrap(bySlot ? bySlot() : ITEM_ART.card(), cls);
+}
+
+// ---------- 魔杖工坊配图 ----------
+const WAND_ART = {
+    wood(id) {
+        const W = { holly: ['#efe3c4', '#c9b48a'], ash: ['#d9cdb4', '#a8987a'], walnut: ['#7b5233', '#4a2f1b'], vine: ['#8f7a4a', '#5a4a26'], hawthorn: ['#a0603e', '#6b3a22'], yew: ['#c26a3a', '#7c3b1a'], cherry: ['#b4553f', '#7a2f22'], elder: ['#bdb6aa', '#77706a'] }[id] || ['#8b5a2b', '#4a2f1b'];
+        const g = gid();
+        const sprig = {
+            holly: `<path d="M44 14 l4 4 l4-2 l-1 5 l4 2 l-5 2 l1 5 l-4-3 l-4 3 z" fill="#15803d" stroke="#052e16" stroke-width=".6"/><circle cx="41" cy="24" r="2.4" fill="#dc2626"/><circle cx="45" cy="27" r="2.4" fill="#dc2626"/>`,
+            ash: `<path d="M40 10 C46 14 50 22 48 30" fill="none" stroke="#65a30d" stroke-width="1"/>${[[42, 14], [46, 18], [48, 24]].map(([x, y]) => `<ellipse cx="${x}" cy="${y}" rx="4" ry="1.8" transform="rotate(30 ${x} ${y})" fill="#84cc16"/>`).join('')}`,
+            walnut: `<circle cx="46" cy="20" r="7" fill="#a16207" stroke="#422006"/><path d="M46 13 v14 M41 17 c3 2 3 6 0 8 M51 17 c-3 2 -3 6 0 8" stroke="#422006" stroke-width=".8" fill="none"/>`,
+            vine: `<path d="M38 28 C40 16 50 14 50 22 C50 28 42 26 44 20 C45 17 48 18 47 21" fill="none" stroke="#4d7c0f" stroke-width="1.6"/><path d="M50 12 c4 0 6 4 4 8 c-4 -1 -6 -4 -4 -8z" fill="#65a30d"/>`,
+            hawthorn: `<path d="M38 26 L50 12" stroke="#57361f" stroke-width="1.2"/>${[[44, 16], [48, 18], [46, 21], [42, 20]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="2.2" fill="#b91c1c"/>`).join('')}<path d="M50 12 c3 -3 6 -1 6 2 c-3 1 -5 0 -6 -2z" fill="#16a34a"/>`,
+            yew: `<path d="M38 28 L52 10" stroke="#3f2a14" stroke-width="1"/>${[0, 1, 2, 3, 4, 5].map(i => { const x = 40 + i * 2.3, y = 25 - i * 3; return `<path d="M${x} ${y} l-5 -1 M${x} ${y} l3 4" stroke="#166534" stroke-width="1.6" stroke-linecap="round"/>`; }).join('')}<circle cx="46" cy="22" r="1.8" fill="#ef4444"/>`,
+            cherry: `${[[44, 16], [50, 20]].map(([x, y]) => `<g transform="translate(${x} ${y})">${[0, 72, 144, 216, 288].map(a => `<ellipse cx="0" cy="-3" rx="2" ry="3" transform="rotate(${a})" fill="#fbcfe8"/>`).join('')}<circle r="1.2" fill="#f59e0b"/></g>`).join('')}`,
+            elder: `${[[42, 14], [46, 12], [50, 15], [44, 18], [48, 19], [52, 20], [46, 22]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="1.8" fill="#f8fafc" stroke="#e5e7eb" stroke-width=".4"/>`).join('')}<path d="M47 22 L44 30" stroke="#57534e" stroke-width="1"/>`
+        }[id] || '';
+        return svgWrap(`<defs>${lg(g, W[0], W[1])}</defs>
+            <rect x="6" y="34" width="52" height="16" rx="8" fill="url(#${g})" stroke="#0007"/>
+            <path d="M12 40 C22 37 34 44 52 39 M12 45 C24 42 36 48 52 44" fill="none" stroke="${W[1]}" stroke-width="1.1" opacity=".9"/>
+            <ellipse cx="54" cy="42" rx="3.5" ry="7.5" fill="${W[0]}" stroke="#0006"/><ellipse cx="54" cy="42" rx="1.6" ry="3.6" fill="none" stroke="${W[1]}" stroke-width=".8"/>
+            ${sprig}`, 'w-full h-full');
+    },
+    core(id) {
+        const g = gid();
+        const art = {
+            unicorn: `<defs>${rg(g, '#ffffff', '#c7d2fe')}</defs><circle cx="32" cy="32" r="22" fill="url(#${g})" opacity=".18"/>
+                <path d="M10 46 C20 30 30 50 40 30 S54 20 56 14" fill="none" stroke="#f8fafc" stroke-width="2" stroke-linecap="round"/>
+                <path d="M10 50 C22 36 32 52 42 34 S54 26 58 20" fill="none" stroke="#e0e7ff" stroke-width="1.2" stroke-linecap="round"/>
+                <path d="M8 42 C18 28 28 46 38 26 S50 16 54 10" fill="none" stroke="#c7d2fe" stroke-width="1" stroke-linecap="round"/>${sparkle(48, 14, 2.5, '#fff')}${sparkle(18, 30, 1.8, '#e0e7ff')}`,
+            dragon: `<defs>${rg(g, '#fecaca', '#991b1b')}</defs><circle cx="32" cy="32" r="22" fill="#dc2626" opacity=".15"/>
+                <path d="M32 50 C14 38 12 24 22 18 C28 15 32 20 32 24 C32 20 36 15 42 18 C52 24 50 38 32 50 Z" fill="url(#${g})" stroke="#450a0a"/>
+                <path d="M8 34 C18 30 22 40 32 34 C42 28 46 38 56 32" fill="none" stroke="#f97316" stroke-width="1.8" stroke-linecap="round"/>
+                <path d="M26 24 C28 22 30 23 30 26" stroke="#fff" stroke-width="1.2" fill="none" opacity=".6"/>`,
+            phoenix: `<defs>${lg(g, '#fde047', '#b91c1c')}</defs><circle cx="32" cy="30" r="22" fill="#f97316" opacity=".15"/>
+                <path d="M16 56 C22 40 30 22 48 6 C50 20 44 38 26 50 Z" fill="url(#${g})" stroke="#7c2d12" stroke-width=".8"/>
+                <path d="M16 56 C26 40 36 24 48 6" stroke="#7c2d12" stroke-width="1" fill="none"/>
+                ${[0, 1, 2, 3, 4].map(i => `<path d="M${22 + i * 5} ${46 - i * 8} l${6 - i * .4} -2" stroke="#fde68a" stroke-width=".8" opacity=".8"/>`).join('')}
+                <path d="M48 6 C52 4 54 8 50 10 C54 10 54 14 49 13" fill="#fbbf24" opacity=".9"/>${sparkle(52, 18, 2.2, '#fde68a')}`,
+            thestral: `<circle cx="32" cy="32" r="22" fill="#4c1d95" opacity=".2"/>
+                <path d="M6 22 C16 16 26 18 32 26 C38 18 48 16 58 22 C52 22 48 26 46 32 C42 28 36 30 32 34 C28 30 22 28 18 32 C16 26 12 22 6 22 Z" fill="#111827" stroke="#6b7280" stroke-width=".7"/>
+                <path d="M14 24 L18 32 M22 21 L24 30 M50 24 L46 32 M42 21 L40 30" stroke="#6b7280" stroke-width=".7"/>
+                <path d="M12 52 C22 42 34 54 44 44 S54 38 58 40" fill="none" stroke="#1f2937" stroke-width="2.4" stroke-linecap="round"/><path d="M12 52 C22 42 34 54 44 44 S54 38 58 40" fill="none" stroke="#9ca3af" stroke-width=".6" stroke-linecap="round"/>`
+        }[id] || '';
+        return svgWrap(art);
+    },
+    finish(id) {
+        const g = gid(), band = { silver: '#e5e7eb', gold: '#facc15', runes: '#a78bfa' }[id];
+        return svgWrap(`<defs>${lg(g, '#9a6a3a', '#3b2410')}</defs>
+            <path d="M4 40 L60 26 L61 30 L5 46 Z" fill="url(#${g})"/>
+            <path d="M2 38 C1 44 4 50 9 49 L30 43 L27 33 Z" fill="#7a4f28" stroke="#0007"/>
+            ${band ? [8, 16, 24].map(x => `<path d="M${x} ${37 - x * .1} L${x + 2.5} ${36.5 - x * .1} L${x + 4.5} ${47 - x * .25} L${x + 2} ${47.5 - x * .25} Z" fill="${band}"/>`).join('') : '<path d="M6 41 C12 38 20 36 27 35" stroke="#fff" stroke-width="1.2" opacity=".35"/>'}
+            ${id === 'gold' ? '<path d="M32 33 c3 -3 6 3 9 0 s6 3 9 0" fill="none" stroke="#facc15" stroke-width="1.1"/>' + sparkle(46, 22, 2.4) : ''}
+            ${id === 'silver' ? sparkle(14, 30, 2.2, '#fff') : ''}
+            ${id === 'runes' ? '<text x="31" y="35" font-size="7" fill="#c4b5fd" transform="rotate(-14 31 35)">ᚠᚱᛟᛗ</text><circle cx="40" cy="20" r="6" fill="#a78bfa" opacity=".25"/>' + sparkle(40, 20, 2.5, '#ddd6fe') : ''}`);
+    },
+    ability(id) {
+        const g = gid();
+        const art = {
+            none: `<circle cx="32" cy="32" r="18" fill="none" stroke="#64748b" stroke-width="1.5" stroke-dasharray="3 3"/>${sparkle(32, 32, 4, '#94a3b8')}`,
+            stun: `<circle cx="32" cy="32" r="22" fill="#ef4444" opacity=".15"/><circle cx="32" cy="32" r="12" fill="#ef4444" opacity=".25"/>
+                <path d="M36 6 L20 34 L31 34 L26 58 L46 26 L34 26 Z" fill="#f87171" stroke="#7f1d1d"/>`,
+            shield: `<defs>${rg(g, '#dbeafe', '#2563eb')}</defs><path d="M8 46 C8 24 20 12 32 12 C44 12 56 24 56 46 Z" fill="url(#${g})" fill-opacity=".35" stroke="#93c5fd" stroke-width="2"/>
+                <path d="M16 46 C16 30 24 20 32 20 C40 20 48 30 48 46" fill="none" stroke="#bfdbfe" stroke-width="1" opacity=".8"/><path d="M4 46 H60" stroke="#93c5fd" stroke-width="2"/>${sparkle(24, 24, 2.4, '#fff')}`,
+            glory: `<path d="M18 52 C8 42 8 26 16 16 M46 52 C56 42 56 26 48 16" fill="none" stroke="#65a30d" stroke-width="1.6"/>
+                ${[0, 1, 2, 3].map(i => `<ellipse cx="${13 + i * .8}" cy="${44 - i * 8}" rx="4" ry="2" transform="rotate(-50 ${13 + i * .8} ${44 - i * 8})" fill="#84cc16"/><ellipse cx="${51 - i * .8}" cy="${44 - i * 8}" rx="4" ry="2" transform="rotate(50 ${51 - i * .8} ${44 - i * 8})" fill="#84cc16"/>`).join('')}
+                <path d="M32 16 L36 27 L48 27 L38 34 L42 46 L32 38 L22 46 L26 34 L16 27 L28 27 Z" fill="#facc15" stroke="#a16207"/>`,
+            fortune: `<circle cx="32" cy="30" r="22" fill="#22c55e" opacity=".12"/>
+                ${[[32, 20], [42, 30], [32, 40], [22, 30]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="8.5" fill="#22c55e" stroke="#14532d"/>`).join('')}
+                <path d="M32 30 C34 40 36 50 42 58" stroke="#15803d" stroke-width="2.2" fill="none"/>${sparkle(46, 14, 2.6)}`,
+            quickdraw: `<circle cx="34" cy="34" r="16" fill="none" stroke="#e6b450" stroke-width="2"/><path d="M34 22 V34 L42 38" stroke="#e6b450" stroke-width="2" fill="none" stroke-linecap="round"/>
+                <path d="M4 26 H16 M2 34 H14 M6 42 H16" stroke="#fde68a" stroke-width="2" stroke-linecap="round" opacity=".8"/>${sparkle(50, 18, 3)}`
+        }[id] || '';
+        return svgWrap(art);
+    }
+};
+
 // ===================== 交易所 =====================
 function isMyListing(l) { return String(l.sellerId) === String(gameState.userId); }
 function openListItemModal() {
@@ -1346,9 +1722,9 @@ function closeListItemModal() { hideModal('listItemModal'); $('listItemForm').re
 async function handleListItemSubmit(e) {
     e.preventDefault();
     const [type, idxStr] = $('listItemSelect').value.split(':'), idx = parseInt(idxStr, 10), price = Number($('itemPriceInput').value);
-    if (!Number.isInteger(price) || price <= 0 || price > MAX_PRICE) return toast(`Please enter a whole-number price from 1 to ${MAX_PRICE}.`, 'error');
+    if (!Number.isInteger(price) || price <= 0 || price > MAX_PRICE) return toast(`Please enter a whole-number price from 1 to ${MAX_PRICE} honour.`, 'error');
     const it = (type === 'card' ? gameState.magicCardsInventory : gameState.inventory)[idx]; if (!it) return;
-    if (!confirm(`List "${it.name}" for ${price} gold?`)) return;
+    if (!confirm(`List "${it.name}" for ${price} honour?`)) return;
     const d = await act('sw_exchange_create', { p_item_type: type, p_index: idx, p_item_id: String(it.id), p_price: price }, 'Listing failed');
     if (d) { toast(`"${it.name}" is now on sale.`); closeListItemModal(); renderExchange(); }
 }
@@ -1356,11 +1732,11 @@ async function renderExchange() {
     const c = $('exchangeListings'); c.innerHTML = '<p class="text-gray-400 col-span-full text-center">Loading the market...</p>';
     try {
         currentListings = await rpc('sw_exchange_list', {}, false) || [];
-        c.innerHTML = currentListings.length ? currentListings.map(l => `<div class="tile p-4 flex flex-col"><div class="w-full h-32 bg-gray-900 rounded mb-3 flex items-center justify-center overflow-hidden">${imgTag(l.image, l.name, 'w-full h-full object-cover') || `<i class="fas ${l.itemType === 'card' ? 'fa-scroll' : 'fa-hat-wizard'} fa-3x text-red-300"></i>`}</div><h4 class="font-bold truncate">${esc(l.name)}</h4><p class="text-xs text-gray-400 mb-1 truncate">${l.itemType === 'card' ? esc(l.description) : `ATK ${num(l.attack)} · DEF ${num(l.defense)}`}</p><p class="text-xs text-red-300 mb-3">Sold by ${esc(l.sellerCharacterName)}</p><div class="flex justify-between items-center mt-auto"><span class="gold font-bold text-lg">${num(l.price)} <i class="fas fa-coins text-sm"></i></span>${isMyListing(l) ? `<button onclick="deleteListing(${num(l.id)})" class="btn-ghost px-3 py-1 rounded text-xs">Remove</button>` : `<button onclick="purchaseListing(${num(l.id)})" class="btn-crimson px-3 py-1 rounded text-xs">Buy</button>`}</div></div>`).join('')
+        c.innerHTML = currentListings.length ? currentListings.map(l => `<div class="tile p-4 flex flex-col"><div class="w-full h-32 bg-gray-900 rounded mb-3 flex items-center justify-center overflow-hidden">${imgTag(l.image, l.name, 'w-full h-full object-cover') || `<div class="w-24 h-24">${itemArt(l.itemType === 'card' ? { kind: 'card' } : { name: l.name, slot: l.slot, color: l.color }, 'w-full h-full')}</div>`}</div><h4 class="font-bold truncate">${esc(l.name)}</h4><p class="text-xs text-gray-400 mb-1 truncate">${l.itemType === 'card' ? esc(l.description) : `ATK ${num(l.attack)} · DEF ${num(l.defense)}`}</p><p class="text-xs text-red-300 mb-3">Sold by ${esc(l.sellerCharacterName)}</p><div class="flex justify-between items-center mt-auto"><span class="font-bold text-lg text-pink-300">${num(l.price)} <i class="fas fa-star text-sm"></i> <span class="text-xs font-normal">honour</span></span>${isMyListing(l) ? `<button onclick="deleteListing(${num(l.id)})" class="btn-ghost px-3 py-1 rounded text-xs">Remove</button>` : `<button onclick="purchaseListing(${num(l.id)})" class="btn-crimson px-3 py-1 rounded text-xs">Buy</button>`}</div></div>`).join('')
             : '<p class="text-gray-400 col-span-full text-center italic">The exchange is empty right now.</p>';
     } catch (e) { c.innerHTML = `<p class="text-red-500 col-span-full text-center">${esc(e.message)}</p>`; }
 }
-async function purchaseListing(id) { const l = currentListings.find(x => Number(x.id) === Number(id)); if (!confirm(`Buy "${l ? l.name : ''}" for ${l ? num(l.price) : ''} gold?`)) return; const d = await act('sw_exchange_buy', { p_listing_id: id }, 'Purchase failed'); if (d) toast('Purchase complete!'); renderExchange(); }
+async function purchaseListing(id) { const l = currentListings.find(x => Number(x.id) === Number(id)); if (!l) return; if (num(gameState.honor) < num(l.price)) return toast(`You need ${num(l.price)} honour to buy this. You have ${num(gameState.honor)}.`, 'error'); if (!confirm(`Buy "${l.name}" for ${num(l.price)} honour?\n\nYour honour goes to the seller.`)) return; const d = await act('sw_exchange_buy', { p_listing_id: id }, 'Purchase failed'); if (d) toast('Purchase complete!'); renderExchange(); }
 async function deleteListing(id) { if (!confirm('Remove this listing? The item will return to your trunk.')) return; const d = await act('sw_exchange_cancel', { p_listing_id: id }, 'Could not remove'); if (d) toast('Listing removed. The item is back in your trunk.'); renderExchange(); }
 
 // ===================== 荣誉殿堂 =====================

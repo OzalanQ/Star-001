@@ -132,7 +132,7 @@
                 <div class="panel p-5">
                     <h2 class="text-xl font-bold text-green-300 mb-3"><i class="fas fa-plus-circle mr-2"></i>加减学院分</h2>
                     <div class="space-y-3">
-                        <select id="hpHouse" class="field"><option value="gryffindor">🦁 格兰芬多</option><option value="slytherin">🐍 斯莱特林</option><option value="ravenclaw">🦅 拉文克劳</option><option value="hufflepuff">🦡 赫奇帕奇</option></select>
+                        <select id="hpHouse" class="field"><option value="gryffindor">🦁 格兰芬多</option><option value="slytherin">🐍 斯莱特林</option><option value="ravenclaw">🦅 拉文克劳</option><option value="hufflepuff">🦡 赫奇帕奇</option><option value="beauxbatons">⚜️ 布斯巴顿</option><option value="durmstrang">❄️ 德姆斯特朗</option></select>
                         <input id="hpAmount" type="number" step="1" class="field" placeholder="分数，扣分填负数，例如 10 或 -5">
                         <input id="hpReason" class="field" maxlength="50" placeholder="原因（可选），例如：小组合作优秀">
                         <button onclick="addHousePoints()" class="btn bg-green-600 hover:bg-green-700 w-full">确定</button>
@@ -482,7 +482,7 @@
         const msg = document.getElementById('backupMsg'); msg.textContent = '正在导出...';
         try {
             const data = await rpc('sw_admin_export');
-            const house = { gryffindor: '格兰芬多', slytherin: '斯莱特林', ravenclaw: '拉文克劳', hufflepuff: '赫奇帕奇' };
+            const house = { gryffindor: '格兰芬多', slytherin: '斯莱特林', ravenclaw: '拉文克劳', hufflepuff: '赫奇帕奇', beauxbatons: '布斯巴顿', durmstrang: '德姆斯特朗' };
             const cell = v => { let x = String(v ?? ''); if (/^[=+\-@]/.test(x)) x = "'" + x; return /[",\n]/.test(x) ? `"${x.replace(/"/g, '""')}"` : x; };
             const rows = [['账号', '角色名', '学院', '金币', '荣誉点', '攻击', '防御', '哈利波特题已掌握', '作业通过数', '谜语答对数', '击败黑巫师数', '注册时间']]
                 .concat(data.summary.map(p => [p.username, p.characterName, house[p.house] || '未分院', p.gold, p.honor, p.attack, p.defense, p.hpMastered, p.tasksApproved, p.riddlesCorrect, num(p.grammarDefeated), new Date(p.createdAt).toLocaleDateString()]));
@@ -729,7 +729,7 @@
 
 
     // ---------- 学院 ----------
-    const HOUSES = { gryffindor: ['🦁', '格兰芬多'], slytherin: ['🐍', '斯莱特林'], ravenclaw: ['🦅', '拉文克劳'], hufflepuff: ['🦡', '赫奇帕奇'] };
+    const HOUSES = { gryffindor: ['🦁', '格兰芬多'], slytherin: ['🐍', '斯莱特林'], ravenclaw: ['🦅', '拉文克劳'], hufflepuff: ['🦡', '赫奇帕奇'], beauxbatons: ['⚜️', '布斯巴顿'], durmstrang: ['❄️', '德姆斯特朗'] };
     function houseSelect(p) {
         return `<select onchange="setHouse('${esc(p.username)}', this.value)" class="field text-xs" style="width:auto;padding:.2rem .4rem"><option value="">未分院</option>${Object.entries(HOUSES).map(([k, [i, n]]) => `<option value="${k}" ${p.house === k ? 'selected' : ''}>${i} ${n}</option>`).join('')}</select>`;
     }
